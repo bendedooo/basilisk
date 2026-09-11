@@ -72,3 +72,7 @@ build/
 !docs/source/Build/
 
 *.git-template
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb

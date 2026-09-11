@@ -294,11 +294,14 @@ def run(showPlots, simTime=None):
 
     TheBSKSim.get_DynModel().cameraMod.saveImages = 0
     # liveStream is used for viewing the spacecraft as it navigates, noDisplay is for headless camera simulation
-    TheBSKSim.get_DynModel().vizInterface.noDisplay = True
+    #TheBSKSim.get_DynModel().vizInterface.noDisplay = True
+    TheBSKSim.get_DynModel().vizInterface.noDisplay = False
+    TheBSKSim.get_DynModel().vizInterface.liveStream = True
 
     # The following code spawns the Vizard application from python
     # Modes: "None", "-directComm", "-noDisplay"
-    TheScenario.run_vizard("-noDisplay")
+    #TheScenario.run_vizard("-noDisplay")
+    TheScenario.run_vizard("-directComm")
 
     # Configure FSW mode
     TheScenario.masterSim.modeRequest = 'prepOpNav'
