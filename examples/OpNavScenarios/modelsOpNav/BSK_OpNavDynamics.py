@@ -69,7 +69,7 @@ class BSKDynamicModels:
         self.cameraFocal = None
         self.sun = None
         self.earth = None
-        self.mars = None
+        self.moon = None
         self.jupiter = None
 
         # Define process name, task name and task time-step
@@ -212,13 +212,13 @@ class BSKDynamicModels:
             SimBase,
             self.taskName,
             [self.scObject],
-            # , saveFile=__file__
+            saveFile=__file__,
             rwEffectorList=[self.rwStateEffector],
         )
         # setup OpNav behavior by connecting camera module config message
         self.vizInterface.addCamMsgToModule(self.cameraMod.cameraConfigOutMsg)
         self.vizInterface.addCamMsgToModule(self.cameraMod2.cameraConfigOutMsg)
-        self.vizInterface.noDisplay = True
+        self.vizInterface.noDisplay = False
         self.vizInterface.settings.skyBox = "black"
         self.vizInterface.settings.ambient = 0.5
 
@@ -241,24 +241,24 @@ class BSKDynamicModels:
 
         timeInitString = "2019 DECEMBER 12 18:00:00.0"
         gravBodies = self.gravFactory.createBodies(
-            ["sun", "earth", "mars barycenter", "jupiter barycenter"]
+            ["sun", "earth", "moon", "jupiter barycenter"]
         )
-        gravBodies["mars barycenter"].isCentralBody = True
+        gravBodies["moon"].isCentralBody = True
         self.sun = 0
         self.earth = 1
-        self.mars = 2
+        self.moon = 2
         self.jupiter = 3
 
         ggm2b_path = get_path(DataFile.LocalGravData.GGM2BData)
-        gravBodies["mars barycenter"].useSphericalHarmonicsGravityModel(
-            str(ggm2b_path), 2
-        )
+        #gravBodies["mars barycenter"].useSphericalHarmonicsGravityModel(
+        #    str(ggm2b_path), 2
+        #)
 
         self.gravFactory.addBodiesTo(self.scObject)
         self.gravFactory.createSpiceInterface(time=timeInitString, epochInMsg=True)
 
         self.gravFactory.spiceObject.referenceBase = "J2000"
-        self.gravFactory.spiceObject.zeroBase = "mars barycenter"
+        self.gravFactory.spiceObject.zeroBase = "moon"
 
         de430_path = get_path(DataFile.EphemerisData.de430)
         naif0012_path = get_path(DataFile.EphemerisData.naif0012)
@@ -450,11 +450,12 @@ class BSKDynamicModels:
         # Initialize the ephemeris module
         self.ephemObject.ModelTag = "EphemData"
         self.ephemObject.addSpiceInputMsg(
-            self.gravFactory.spiceObject.planetStateOutMsgs[self.mars]
+            self.gravFactory.spiceObject.planetStateOutMsgs[self.moon]
         )
 
     def SetSimpleGrav(self):
-        planet = self.gravFactory.createMarsBarycenter()
+        #planet = self.gravFactory.createMarsBarycenter()
+        planet = self.gravFactory.createMoon()
         planet.isCentralBody = True
 
         self.gravFactory.addBodiesTo(self.scObject)

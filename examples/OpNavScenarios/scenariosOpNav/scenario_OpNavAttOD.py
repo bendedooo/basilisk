@@ -100,7 +100,7 @@ class scenario_OpNav(BSKScenario):
         oe.Omega = 25. * macros.D2R
         oe.omega = 190. * macros.D2R
         oe.f = 80. * macros.D2R  # 90 good
-        mu = self.masterSim.get_DynModel().gravFactory.gravBodies['mars barycenter'].mu
+        mu = self.masterSim.get_DynModel().gravFactory.gravBodies['moon'].mu
 
         rN, vN = orbitalMotion.elem2rv(mu, oe)
         orbitalMotion.rv2elem(mu, rN, vN)
@@ -225,7 +225,8 @@ class scenario_OpNav(BSKScenario):
 
         switchIdx = 0
 
-        Rmars = 3396.19*1E3
+        # Rmars = 3396.19*1E3
+        Rmoon = self.masterSim.get_DynModel().gravFactory.gravBodies['moon'].radEquator * 1E3
         for j in range(len(stateError[:, 0])):
             if stateError[j, 0] in navState[:, 0]:
                 stateError[j, 1:4] -= navState[j - switchIdx, 1:4]
@@ -238,7 +239,8 @@ class scenario_OpNav(BSKScenario):
                 trueR_C[i, 1:] = np.dot(np.dot(dcm_CB, rbk.MRP2C(sigma_BN[i + switchIdx, 1:4])),
                                             position_N[i + switchIdx, 1:4])
                 trueRhat_C[i,1:] = np.dot(np.dot(dcm_CB, rbk.MRP2C(sigma_BN[i +switchIdx, 1:4])) ,position_N[i +switchIdx, 1:4])/np.linalg.norm(position_N[i +switchIdx, 1:4])
-                trueCircles[i,3] = focal*np.tan(np.arcsin(Rmars/np.linalg.norm(position_N[i,1:4])))/pixelSize[0]
+                #trueCircles[i,3] = focal*np.tan(np.arcsin(Rmars/np.linalg.norm(position_N[i,1:4])))/pixelSize[0]
+                trueCircles[i,3] = focal*np.tan(np.arcsin(Rmoon/np.linalg.norm(position_N[i,1:4])))/pixelSize[0]
                 trueRhat_C[i,1:] *= focal/trueRhat_C[i,3]
                 trueCircles[i, 1] = trueRhat_C[i, 1] / pixelSize[0] + sizeOfCam[0]/2 - 0.5
                 trueCircles[i, 2] = trueRhat_C[i, 2] / pixelSize[1] + sizeOfCam[1]/2 - 0.5

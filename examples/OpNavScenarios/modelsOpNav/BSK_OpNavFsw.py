@@ -580,7 +580,7 @@ class BSKFswModels():
         self.horizonNav.noiseSF = 1  # 2 should work though
         messaging.OpNavMsg_C_addAuthor(self.horizonNav.opNavOutMsg, self.opnavMsg)
 
-    def SetRelativeODFilter(self):
+    def SetRelativeODFilter(self , SimBase):
         self.relativeOD.opNavInMsg.subscribeTo(self.opnavMsg)
 
         self.relativeOD.planetIdInit = 2
@@ -589,7 +589,8 @@ class BSKFswModels():
         self.relativeOD.kappa = 0.0
         self.relativeOD.noiseSF = 7.5
 
-        mu = 42828.314 * 1E9  # m^3/s^2
+      #  mu = 42828.314 * 1E9  # m^3/s^2
+        mu = SimBase.DynModels.gravFactory.gravBodies["moon"].mu
         elementsInit = orbitalMotion.ClassicElements()
         elementsInit.a = 10000 * 1E3  # m
         elementsInit.e = 0.2
@@ -632,7 +633,8 @@ class BSKFswModels():
         self.pixelLineFilter.kappa = 0.0
         self.pixelLineFilter.gamma = 0.9
 
-        mu = 42828.314 * 1E9  # m^3/s^2
+        # mu = 42828.314 * 1E9  # m^3/s^2
+        mu = SimBase.DynModels.gravFactory.gravBodies["moon"].mu
         elementsInit = orbitalMotion.ClassicElements()
         elementsInit.a = 10000 * 1E3  # m
         elementsInit.e = 0.2
@@ -673,7 +675,7 @@ class BSKFswModels():
 
         if centerRadiusCNNIncluded:
             self.SetCNNOpNav(SimBase)
-        self.SetRelativeODFilter()
+        self.SetRelativeODFilter(SimBase)
         self.SetFaultDetection(SimBase)
 
         # J. Christian methods
