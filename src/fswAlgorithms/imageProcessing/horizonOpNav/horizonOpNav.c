@@ -93,8 +93,8 @@ void Update_horizonOpNav(HorizonOpNavData *configData, uint64_t callTime, int64_
         opNavMsgOut.planetID = configData->planetTarget;
     }
     if(configData->planetTarget ==2){
-        planetRad_Eq = REQ_MARS*1E3;//in m
-        planetRad_Pol = RP_MARS*1E3;
+        planetRad_Eq = REQ_MOON*1E3;//in m
+        planetRad_Pol = REQ_MOON*1E3;
         opNavMsgOut.planetID = configData->planetTarget;
     }
     if(configData->planetTarget ==3){

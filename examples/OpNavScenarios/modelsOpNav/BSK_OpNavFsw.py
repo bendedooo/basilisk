@@ -560,7 +560,7 @@ class BSKFswModels():
         self.pixelLine.circlesInMsg.subscribeTo(self.opnavCirclesMsg)
         self.pixelLine.cameraConfigInMsg.subscribeTo(SimBase.DynModels.cameraMod.cameraConfigOutMsg)
         self.pixelLine.attInMsg.subscribeTo(SimBase.DynModels.SimpleNavObject.attOutMsg)
-        self.pixelLine.planetTarget = 4
+        self.pixelLine.planetTarget = 2
         messaging.OpNavMsg_C_addAuthor(self.pixelLine.opNavOutMsg, self.opnavMsg)
 
     def SetLimbFinding(self, SimBase):
@@ -576,14 +576,14 @@ class BSKFswModels():
         self.horizonNav.limbInMsg.subscribeTo(self.limbFinding.opnavLimbOutMsg)
         self.horizonNav.cameraConfigInMsg.subscribeTo(SimBase.DynModels.cameraMod.cameraConfigOutMsg)
         self.horizonNav.attInMsg.subscribeTo(SimBase.DynModels.SimpleNavObject.attOutMsg)
-        self.horizonNav.planetTarget = 4
+        self.horizonNav.planetTarget = 2
         self.horizonNav.noiseSF = 1  # 2 should work though
         messaging.OpNavMsg_C_addAuthor(self.horizonNav.opNavOutMsg, self.opnavMsg)
 
     def SetRelativeODFilter(self , SimBase):
         self.relativeOD.opNavInMsg.subscribeTo(self.opnavMsg)
 
-        self.relativeOD.planetIdInit = 4
+        self.relativeOD.planetIdInit = 2
         self.relativeOD.alpha = 0.02
         self.relativeOD.beta = 2.0
         self.relativeOD.kappa = 0.0
@@ -627,7 +627,7 @@ class BSKFswModels():
         self.pixelLineFilter.cameraConfigInMsg.subscribeTo(SimBase.DynModels.cameraMod.cameraConfigOutMsg)
         self.pixelLineFilter.attInMsg.subscribeTo(SimBase.DynModels.SimpleNavObject.attOutMsg)
 
-        self.pixelLineFilter.planetIdInit = 4
+        self.pixelLineFilter.planetIdInit = 2
         self.pixelLineFilter.alpha = 0.02
         self.pixelLineFilter.beta = 2.0
         self.pixelLineFilter.kappa = 0.0

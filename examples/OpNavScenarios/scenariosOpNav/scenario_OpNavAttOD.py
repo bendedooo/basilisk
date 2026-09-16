@@ -86,6 +86,10 @@ class scenario_OpNav(BSKScenario):
 
         # declare additional class variables
         self.opNavRec = None
+        #test
+        self.pixelLineRec = None
+        self.horizonNavRec = None
+        #test
         self.circlesRec = None
         self.scRec = None
         self.filtRec = None
@@ -145,6 +149,12 @@ class scenario_OpNav(BSKScenario):
             self.masterSim.AddModelToTask(DynModel.taskName, self.filtRec)
             self.opNavRec = FswModel.opnavMsg.recorder(samplingTime)
             self.masterSim.AddModelToTask(DynModel.taskName, self.opNavRec)
+            #test
+            self.pixelLineRec = FswModel.pixelLine.opNavOutMsg.recorder(samplingTime)
+            self.masterSim.AddModelToTask(DynModel.taskName, self.pixelLineRec)
+            self.horizonNavRec = FswModel.horizonNav.opNavOutMsg.recorder(samplingTime)
+            self.masterSim.AddModelToTask(DynModel.taskName, self.horizonNavRec)
+            #test
         if self.filterUse == "bias":
             self.filtRec = FswModel.pixelLineFilter.filtDataOutMsg.recorder(samplingTime)
             self.masterSim.AddModelToTask(DynModel.taskName, self.filtRec)
@@ -184,6 +194,12 @@ class scenario_OpNav(BSKScenario):
             r_C = simHelpers.addTimeColumn(self.opNavRec.times(), self.opNavRec.r_BN_C)
             measCovar = simHelpers.addTimeColumn(self.opNavRec.times(), self.opNavRec.covar_N)
             covar_C = simHelpers.addTimeColumn(self.opNavRec.times(), self.opNavRec.covar_C)
+            # test
+            print("Unique OpNav planet IDs:", np.unique(self.opNavRec.planetID))
+            print("Combined opnavMsg planet IDs:", np.unique(self.opNavRec.planetID))
+            print("pixelLine planet IDs:", np.unique(self.pixelLineRec.planetID))
+            print("horizonNav planet IDs:", np.unique(self.horizonNavRec.planetID))
+            #test
 
         sigma_CB = self.masterSim.get_DynModel().cameraMRP_CB
         sizeMM = self.masterSim.get_DynModel().cameraSize

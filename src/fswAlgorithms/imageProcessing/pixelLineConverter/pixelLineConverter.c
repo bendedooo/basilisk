@@ -123,7 +123,7 @@ void Update_pixelLineConverter(PixelLineConvertData *configData, uint64_t callTi
             opNavMsgOut.planetID = configData->planetTarget;
         }
         if(configData->planetTarget ==2){
-            planetRad = REQ_MARS;//in km
+            planetRad = REQ_MOON;//in km
             opNavMsgOut.planetID = configData->planetTarget;
         }
         if(configData->planetTarget ==3){

@@ -231,7 +231,7 @@ void relODStateProp(RelODuKFConfig *configData, double *stateInOut, double dt)
     double k1[ODUKF_N_STATES], k2[ODUKF_N_STATES], k3[ODUKF_N_STATES], k4[ODUKF_N_STATES];
     double states1[ODUKF_N_STATES], states2[ODUKF_N_STATES], states3[ODUKF_N_STATES];
     if(configData->planetId ==1){muPlanet = MU_EARTH;} //in km
-    if(configData->planetId ==2){muPlanet = MU_MARS;} //in km
+    if(configData->planetId ==2){muPlanet = MU_MOON;} //in km
     if(configData->planetId ==3){muPlanet = MU_JUPITER;} //in km
     if(configData->planetId ==4){muPlanet = MU_MOON;}
 
