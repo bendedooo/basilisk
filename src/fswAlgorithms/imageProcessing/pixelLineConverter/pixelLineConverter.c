@@ -130,6 +130,10 @@ void Update_pixelLineConverter(PixelLineConvertData *configData, uint64_t callTi
             planetRad = REQ_JUPITER;//in km
             opNavMsgOut.planetID = configData->planetTarget;
         }
+        if(configData->planetTarget ==4){
+            planetRad = REQ_MOON;
+            opNavMsgOut.planetID = configData->planetTarget;
+        }
 
         denom = sin(atan(X*circlesIn.circlesRadii[0]));
         rNorm = planetRad/denom; //in km

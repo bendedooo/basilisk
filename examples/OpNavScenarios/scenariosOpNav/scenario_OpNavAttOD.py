@@ -226,7 +226,15 @@ class scenario_OpNav(BSKScenario):
         switchIdx = 0
 
         # Rmars = 3396.19*1E3
-        Rmoon = self.masterSim.get_DynModel().gravFactory.gravBodies['moon'].radEquator * 1E3
+        Rmoon = self.masterSim.get_DynModel().gravFactory.gravBodies['moon'].radEquator
+        #test
+        # print("Rmoon =", Rmoon)
+        # distances = np.linalg.norm(position_N[:, 1:4], axis=1)
+        # print("Minimum spacecraft-Moon distance [km]:",np.min(distances) / 1e3)
+        # print("Maximum spacecraft-Moon distance [km]:",np.max(distances) / 1e3)
+        # print("First spacecraft-Moon distance [km]:",distances[0] / 1e3)
+        #test
+        
         for j in range(len(stateError[:, 0])):
             if stateError[j, 0] in navState[:, 0]:
                 stateError[j, 1:4] -= navState[j - switchIdx, 1:4]
@@ -239,11 +247,37 @@ class scenario_OpNav(BSKScenario):
                 trueR_C[i, 1:] = np.dot(np.dot(dcm_CB, rbk.MRP2C(sigma_BN[i + switchIdx, 1:4])),
                                             position_N[i + switchIdx, 1:4])
                 trueRhat_C[i,1:] = np.dot(np.dot(dcm_CB, rbk.MRP2C(sigma_BN[i +switchIdx, 1:4])) ,position_N[i +switchIdx, 1:4])/np.linalg.norm(position_N[i +switchIdx, 1:4])
+                #test
+                # print("DEBUG i =", i)
+                # print("position_N =", position_N[i,1:4])
+                # print("distance =", np.linalg.norm(position_N[i,1:4]))
+                # print("Rmoon/distance =", Rmoon/np.linalg.norm(position_N[i,1:4]))
+                # print("arcsin =", np.arcsin(Rmoon/np.linalg.norm(position_N[i,1:4])))
+                # print("focal =", focal)
+                # print("pixelSize =", pixelSize)
+                #test
                 #trueCircles[i,3] = focal*np.tan(np.arcsin(Rmars/np.linalg.norm(position_N[i,1:4])))/pixelSize[0]
                 trueCircles[i,3] = focal*np.tan(np.arcsin(Rmoon/np.linalg.norm(position_N[i,1:4])))/pixelSize[0]
+                
+                #test
+                # print("trueR_C =", trueR_C[i,1:])
+                # print("trueRhat_C BEFORE =", trueRhat_C[i,1:])
+                # print("trueCircles radius =", trueCircles[i,3])
+                #test
+                
                 trueRhat_C[i,1:] *= focal/trueRhat_C[i,3]
+            
+                #test
+                # print("trueRhat_C AFTER =", trueRhat_C[i,1:])
+                #test
+                
                 trueCircles[i, 1] = trueRhat_C[i, 1] / pixelSize[0] + sizeOfCam[0]/2 - 0.5
                 trueCircles[i, 2] = trueRhat_C[i, 2] / pixelSize[1] + sizeOfCam[1]/2 - 0.5
+
+                #test
+                # print("trueCircles =", trueCircles[i,1:])
+                #test
+                
                 if self.filterUse == "bias":
                     centerBias[i,1:3] = np.round(navState[i, 7:9])
                     radBias[i,1] = np.round(navState[i, -1])
@@ -267,6 +301,17 @@ class scenario_OpNav(BSKScenario):
             circleCenters[i,1:] += centerBias[i,1:]
             circleRadii[i,1:] += radBias[i,1:]
             BSK_plt.plotPostFitResiduals(navPostFits, pixCovar)
+        
+        #test
+        # print("trueCircles shape:", np.asarray(trueCircles).shape)
+        # print("trueCircles first 5 rows:")
+        # print(np.asarray(trueCircles)[:5])
+
+        # print("circleRadii shape:", np.asarray(circleRadii).shape)
+        # print("circleRadii first 5 rows:")
+        # print(np.asarray(circleRadii)[:5])
+        #test
+        
         BSK_plt.imgProcVsExp(trueCircles, circleCenters, circleRadii, np.array(sizeOfCam))
         if self.filterUse == "relOD":
             BSK_plt.plotPostFitResiduals(navPostFits, measCovar)

@@ -233,6 +233,7 @@ void relODStateProp(RelODuKFConfig *configData, double *stateInOut, double dt)
     if(configData->planetId ==1){muPlanet = MU_EARTH;} //in km
     if(configData->planetId ==2){muPlanet = MU_MARS;} //in km
     if(configData->planetId ==3){muPlanet = MU_JUPITER;} //in km
+    if(configData->planetId ==4){muPlanet = MU_MOON;}
 
     /*! Start RK4 */
     /*! - Compute k1 */
