@@ -198,6 +198,7 @@ class scenario_OpNav(BSKScenario):
             print("Unique OpNav planet IDs:", np.unique(self.opNavRec.planetID))
             print("Combined opnavMsg planet IDs:", np.unique(self.opNavRec.planetID))
             print("pixelLine planet IDs:", np.unique(self.pixelLineRec.planetID))
+            print(np.unique(self.pixelLineRec.planetID, return_counts=True))
             print("horizonNav planet IDs:", np.unique(self.horizonNavRec.planetID))
             #test
 

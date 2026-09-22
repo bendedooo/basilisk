@@ -214,6 +214,7 @@ def diff_methods(vec1, meth1, meth2, val1, val2):
         diff2[i,1:] = vec1[validIdx2[i],1:] - meth2[validIdx2[i],1:]
         diffNorms2[i,0] = vec1[validIdx2[i],0]
         diffNorms2[i,1] = np.linalg.norm(vec1[validIdx2[i],1:]) - np.linalg.norm(meth2[validIdx2[i],1:])
+    
     plt.figure(1, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
     plt.xlabel('Time')
     plt.plot(diff1[:, 0] * ns2min, diff1[:, 1] * m2km, color = colorList[1], label=r"$\mathbf{r}_\mathrm{Limb}$")
@@ -255,28 +256,77 @@ def diff_vectors(vec1, vec2, valid, string):
         diff[i,1:] = vec1[validIdx[i],1:] - vec2[validIdx[i],1:]
         diffNorms[i,0] = vec1[validIdx[i],0]
         diffNorms[i,1] = np.linalg.norm(vec1[validIdx[i],1:]) - np.linalg.norm(vec2[validIdx[i],1:])
-    # plt.figure(1, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
-    plt.figure(1, figsize=(3.5, 2.), facecolor='w', edgecolor='k')
-    plt.xlabel('Time')
-    plt.plot(diff[:, 0] * ns2min, diff[:, 1] * m2km2, color = colorList[1], label=r"$x_\mathrm{"+string+"}$")
-    plt.plot(diff[:, 0] * ns2min, np.mean(diff[:, 1]) * m2km2 * np.ones(len(diff[:, 0])), color = colorList[1], linestyle = '--')
-    plt.plot(diff[:, 0] * ns2min, diff[:, 2] * m2km2, color = colorList[5], label=r"$y_\mathrm{"+string+"}$")
-    plt.plot(diff[:, 0] * ns2min, np.mean(diff[:, 2]) * m2km2 * np.ones(len(diff[:, 0])), color = colorList[5], linestyle = '--')
-    plt.plot(diff[:, 0] * ns2min, diff[:, 3] * m2km2, color = colorList[8], label=r"$z_\mathrm{"+string+"}$")
-    plt.plot(diff[:, 0] * ns2min, np.mean(diff[:, 3]) * m2km2 * np.ones(len(diff[:, 0])), color = colorList[8], linestyle = '--')
-    plt.legend()
-    plt.ylabel(r"$\mathbf{r}_{\mathrm{true}} - \mathbf{r}_{\mathrm{opnav}}$ (km)")
-    plt.xlabel("Time (min)")
-    ##plt.savefig('MeasErrorComponents.pdf')
+    # # plt.figure(1, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
+    # plt.figure(1, figsize=(3.5, 2.), facecolor='w', edgecolor='k')
+    # # plt.xlabel('Time')
+    # plt.plot(diff[:, 0] * ns2min, diff[:, 1] * m2km2, color = colorList[1], label=r"$x_\mathrm{"+string+"}$")
+    # plt.plot(diff[:, 0] * ns2min, np.mean(diff[:, 1]) * m2km2 * np.ones(len(diff[:, 0])), color = colorList[1], linestyle = '--')
+    # plt.plot(diff[:, 0] * ns2min, diff[:, 2] * m2km2, color = colorList[5], label=r"$y_\mathrm{"+string+"}$")
+    # plt.plot(diff[:, 0] * ns2min, np.mean(diff[:, 2]) * m2km2 * np.ones(len(diff[:, 0])), color = colorList[5], linestyle = '--')
+    # plt.plot(diff[:, 0] * ns2min, diff[:, 3] * m2km2, color = colorList[8], label=r"$z_\mathrm{"+string+"}$")
+    # plt.plot(diff[:, 0] * ns2min, np.mean(diff[:, 3]) * m2km2 * np.ones(len(diff[:, 0])), color = colorList[8], linestyle = '--')
+    # plt.legend()
+    # plt.ylabel(r"$\mathbf{r}_{\mathrm{true}} - \mathbf{r}_{\mathrm{opnav}}$ (km)")
+    # plt.xlabel("Time (min)")
+    # plt.grid(True)
+    # ##plt.savefig('MeasErrorComponents.pdf')
 
-    # plt.figure(2, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
-    plt.figure(2, figsize=(3.5, 2.), facecolor='w', edgecolor='k')
-    plt.xlabel('Time')
-    plt.plot(diff[:, 0] * ns2min, diffNorms[:,1] * m2km2, color = colorList[1])
-    plt.plot(diff[:, 0] * ns2min, np.mean(diffNorms[:,1]) * m2km2 * np.ones(len(diff[:, 0])),  color = colorList[1], linestyle="--")
-    plt.ylabel(r"$|\mathbf{r}_{\mathrm{true}}|$ - $|\mathbf{r}_{\mathrm{opnav}}|$ (km)")
-    plt.xlabel("Time (min)")
-    #plt.savefig('MeasErrorNorm.pdf')
+    # # plt.figure(2, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
+    # plt.figure(2, figsize=(3.5, 2.), facecolor='w', edgecolor='k')
+    # plt.plot(diff[:, 0] * ns2min, diffNorms[:,1] * m2km2, color = colorList[1])
+    # plt.plot(diff[:, 0] * ns2min, np.mean(diffNorms[:,1]) * m2km2 * np.ones(len(diff[:, 0])),  color = colorList[1], linestyle="--")
+    # plt.ylabel(r"$|\mathbf{r}_{\mathrm{true}}|$ - $|\mathbf{r}_{\mathrm{opnav}}|$ (km)")
+    # plt.xlabel("Time (min)")
+    # plt.grid(True)
+    # #plt.savefig('MeasErrorNorm.pdf')
+
+    fig, axes = plt.subplots(2, 1, figsize=(6, 5.5))
+
+    # -------------------------
+    # Position error components
+    # -------------------------
+    ax = axes[0]
+
+    ax.plot(diff[:, 0] * ns2min,
+            diff[:, 1] * m2km2,
+            color=colorList[1],
+            label=r"$x_{\mathrm{true}}-x_{\mathrm{opnav}}$")
+
+    ax.plot(diff[:, 0] * ns2min,
+            diff[:, 2] * m2km2,
+            color=colorList[5],
+            label=r"$y_{\mathrm{true}}-y_{\mathrm{opnav}}$")
+
+    ax.plot(diff[:, 0] * ns2min,
+            diff[:, 3] * m2km2,
+            color=colorList[8],
+            label=r"$z_{\mathrm{true}}-z_{\mathrm{opnav}}$")
+
+    ax.set_ylabel("Position Error (km)")
+    ax.set_title("Position Error Components")
+    ax.legend(loc='best')
+    ax.grid(True)
+
+    # -------------------------
+    # Radial distance difference
+    # -------------------------
+    ax = axes[1]
+
+    ax.plot(diffNorms[:, 0] * ns2min,
+            diffNorms[:, 1] * m2km2,
+            color=colorList[1])
+
+    ax.set_ylabel(
+        r"$|\mathbf{r}_{\mathrm{true}}|-|\mathbf{r}_{\mathrm{opnav}}|$ (km)"
+    )
+    ax.set_xlabel("Time (min)")
+    ax.set_title("Radial Distance Difference")
+    ax.grid(True)
+
+    fig.suptitle("Navigation Position Errors")
+    plt.tight_layout(rect=[0, 0, 1, 0.94])
+
+
     return
 
 def nav_percentages(truth, states, covar, valid, string):
@@ -307,26 +357,81 @@ def nav_percentages(truth, states, covar, valid, string):
         covarVel[i,0] = states[validIdx[i],0]
         velVec = np.sqrt(np.array([covar[validIdx[i],1 + 3*(6+1)], covar[validIdx[i],1 + 4*(6+1)], covar[validIdx[i],1 + 5*(6+1)]]))
         covarVel[i,1] = 3*np.linalg.norm(velVec)/np.linalg.norm(truth[validIdx[i],4:7])*100
-    plt.figure(101, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
-    # plt.figure(101, figsize=(3.5, 2), facecolor='w', edgecolor='k')
-    plt.plot(diffPos[:, 0] * ns2min, diffPos[:, 1] , color = colorList[1], label = "Error")
-    plt.plot(covarPos[:, 0] * ns2min, covarPos[:,1], color = colorList[8], linestyle = '--', label=r'Covar ($3\sigma$)')
-    plt.legend(loc='upper right')
-    plt.ylabel(r"$\mathbf{r}_\mathrm{"+string+r"}$ errors ($\%$)")
-    plt.xlabel("Time (min)")
-    # plt.ylim([0,3.5])
-    #plt.savefig('PercentErrorPos.pdf')
+    # plt.figure(101, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
+    # # plt.figure(101, figsize=(3.5, 2), facecolor='w', edgecolor='k')
+    # plt.plot(diffPos[:, 0] * ns2min, diffPos[:, 1] , color = colorList[1], label = "Error")
+    # plt.plot(covarPos[:, 0] * ns2min, covarPos[:,1], color = colorList[8], linestyle = '--', label=r'Covar ($3\sigma$)')
+    # plt.legend(loc='upper right')
+    # plt.ylabel(r"$\mathbf{r}_\mathrm{"+string+r"}$ errors ($\%$)")
+    # plt.xlabel("Time (min)")
+    # # plt.ylim([0,3.5])
+    # #plt.savefig('PercentErrorPos.pdf')
 
-    plt.figure(102, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
-    # plt.figure(102, figsize=(3.5, 2.), facecolor='w', edgecolor='k')
-    plt.plot(diffVel[:, 0] * ns2min, diffVel[:, 1], color = colorList[1])
-    plt.plot(covarVel[:, 0] * ns2min, covarVel[:,1], color = colorList[8], linestyle = '--')
-    plt.ylabel(r"$\dot{\mathbf{r}}_\mathrm{"+string+ r"}$ errors ($\%$)")
-    plt.xlabel("Time (min)")
-    # plt.ylim([0,15])
-    #plt.savefig('PercentErrorVel.pdf')
+    # plt.figure(102, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
+    # # plt.figure(102, figsize=(3.5, 2.), facecolor='w', edgecolor='k')
+    # plt.plot(diffVel[:, 0] * ns2min, diffVel[:, 1], color = colorList[1])
+    # plt.plot(covarVel[:, 0] * ns2min, covarVel[:,1], color = colorList[8], linestyle = '--')
+    # plt.ylabel(r"$\dot{\mathbf{r}}_\mathrm{"+string+ r"}$ errors ($\%$)")
+    # plt.xlabel("Time (min)")
+    # # plt.ylim([0,15])
+    # #plt.savefig('PercentErrorVel.pdf')
 
+    fig, axes = plt.subplots(2, 1, figsize=(6, 5.5),
+                             sharex=True)
 
+    # -------------------------
+    # Position percentage error
+    # -------------------------
+    ax = axes[0]
+
+    ax.plot(
+        diffPos[:, 0] * ns2min,
+        diffPos[:, 1],
+        color=colorList[1],
+        label="Error"
+    )
+
+    ax.plot(
+        covarPos[:, 0] * ns2min,
+        covarPos[:, 1],
+        color=colorList[8],
+        linestyle='--',
+        label=r'Covar ($3\sigma$)'
+    )
+
+    ax.set_ylabel(r"$\mathbf{r}_{\mathrm{"+string+"}}$ error (%)")
+    ax.set_title("Position")
+    ax.legend(loc='best')
+    ax.grid(True)
+
+    # -------------------------
+    # Velocity percentage error
+    # -------------------------
+    ax = axes[1]
+
+    ax.plot(
+        diffVel[:, 0] * ns2min,
+        diffVel[:, 1],
+        color=colorList[1],
+        label="Error"
+    )
+
+    ax.plot(
+        covarVel[:, 0] * ns2min,
+        covarVel[:, 1],
+        color=colorList[8],
+        linestyle='--',
+        label=r'Covar ($3\sigma$)'
+    )
+
+    ax.set_ylabel(r"$\dot{\mathbf{r}}_{\mathrm{"+string+"}}$ error (%)")
+    ax.set_xlabel("Time (min)")
+    ax.set_title("Velocity")
+    ax.legend(loc='best')
+    ax.grid(True)
+
+    fig.suptitle("Navigation Error Percentages")
+    plt.tight_layout(rect=[0, 0, 1, 0.94])
     RMSPos = np.sqrt(sum(diffPos[:, 1] ** 2)/len(diffPos[:, 1]))
     RMSPosCov = np.sqrt(sum((covarPos[:, 1]) ** 2)/len(covarPos[:, 1]))
     RMSVel = np.sqrt(sum(diffVel[:, 1] ** 2)/len(diffVel[:, 1]))
@@ -388,6 +493,8 @@ def plot_TwoOrbits(r_BN, r_BN2):
     ax.set_xlabel(r'$R_x$, km')
     ax.set_ylabel(r'$R_y$, km')
     ax.set_zlabel(r'$R_z$, km')
+    ax.set_title('True and OpNav-Measured Spacecraft Position')
+    ax.legend(loc='best')
     ax.plot(r_BN[:, 1] * m2km, r_BN[:, 2] * m2km, r_BN[:, 3] * m2km, color=colorList[1], label="True")
     for i in range(len(r_BN2[:,0])):
         if np.abs(r_BN2[i, 1])>0 or np.abs(r_BN2[i, 2])>0:
@@ -482,125 +589,438 @@ def plotStateCovarPlot(x, Pflat):
             P[i,:,:] = Pflat[i,1:].reshape([numStates,numStates])
 
 
-    if numStates == 9 :
-        plt.figure(10, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
-        plt.plot(t , x[:, 1]*m2km, label='$r_1$', color = colorList[1])
-        plt.plot(t , 3 * np.sqrt(P[:, 0, 0])*m2km, '--',  label=r'Covar (3-$\sigma$)', color = colorList[8])
-        plt.plot(t ,- 3 * np.sqrt(P[:, 0, 0])*m2km, '--', color = colorList[8])
-        plt.legend(loc='best')
-        plt.ylabel('Position Error (km)')
-        plt.grid()
+    # if numStates == 9 :
+    #     plt.figure(10, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
+    #     plt.plot(t , x[:, 1]*m2km, label=r'$r_1$ error',color = colorList[1])
+    #     plt.plot(t , 3 * np.sqrt(P[:, 0, 0])*m2km, '--',  label=r'$\pm3\sigma$', color = colorList[8])
+    #     plt.plot(t ,- 3 * np.sqrt(P[:, 0, 0])*m2km, '--', color = colorList[8])
+    #     plt.legend(loc='best')
+    #     plt.xlabel('Time (min)')
+    #     plt.ylabel('Position Error (km)')
+    #     plt.title('First position component')
+    #     plt.grid()
 
-        plt.figure(11, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
-        plt.plot(t , x[:, 4]*m2km, color = colorList[1])
-        plt.plot(t , 3 * np.sqrt(P[:, 3, 3])*m2km, '--', color = colorList[8])
-        plt.plot(t ,- 3 * np.sqrt(P[:, 3, 3])*m2km, '--', color = colorList[8])
-        plt.ylabel('Rate Error (km/s)')
-        plt.grid()
+    #     plt.figure(11, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
+    #     plt.plot(t , x[:, 4]*m2km, label=r'$v_1$ error',color = colorList[1])
+    #     plt.plot(t , 3 * np.sqrt(P[:, 3, 3])*m2km, '--', label=r'$\pm3\sigma$',color = colorList[8])
+    #     plt.plot(t ,- 3 * np.sqrt(P[:, 3, 3])*m2km, '--', color = colorList[8])
+    #     plt.xlabel('Time (min)')
+    #     plt.ylabel('Rate Error (km/s)')
+    #     plt.title('First rate component')
+    #     plt.grid()
 
-        plt.figure(12, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
-        plt.plot(t , x[:, 7], color = colorList[1])
-        plt.plot(t , x0[0] + 3 * np.sqrt(P[:, 6, 6]), '--', color = colorList[8])
-        plt.plot(t , x0[0] - 3 * np.sqrt(P[:, 6, 6]), '--', color = colorList[8])
-        plt.title('First bias component (km/s)')
-        plt.grid()
+    #     plt.figure(12, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
+    #     plt.plot(t , x[:, 7], label='Bias error',color = colorList[1])
+    #     plt.plot(t , x0[0] + 3 * np.sqrt(P[:, 6, 6]), '--', label=r'$\pm3\sigma$',color = colorList[8])
+    #     plt.plot(t , x0[0] - 3 * np.sqrt(P[:, 6, 6]), '--', color = colorList[8])
+    #     plt.title('First bias component')
+    #     plt.ylabel('Bias Error (km/s)')
+    #     plt.xlabel('Time (min)')
+    #     plt.grid()
 
-        plt.figure(13, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
-        plt.plot(t , x[:, 2]*m2km, color = colorList[1])
-        plt.plot(t , 3 * np.sqrt(P[:, 1, 1])*m2km, '--', color = colorList[8])
-        plt.plot(t ,- 3 * np.sqrt(P[:, 1, 1])*m2km, '--', color = colorList[8])
-        plt.title('Second pos component (km)')
-        plt.grid()
+    #     plt.figure(13, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
+    #     plt.plot(t , x[:, 2]*m2km,  label=r'$r_2$ error',color = colorList[1])
+    #     plt.plot(t , 3 * np.sqrt(P[:, 1, 1])*m2km, '--', label=r'$\pm3\sigma$',color = colorList[8])
+    #     plt.plot(t ,- 3 * np.sqrt(P[:, 1, 1])*m2km, '--', color = colorList[8])
+    #     plt.xlabel('Time (min)')
+    #     plt.ylabel('Position Error (km)')
+    #     plt.title('Second position component')
+    #     plt.grid()
 
-        plt.figure(14, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
-        plt.plot(t , x[:, 5]*m2km, color = colorList[1])
-        plt.plot(t , 3 * np.sqrt(P[:, 4, 4])*m2km, '--', color = colorList[8])
-        plt.plot(t ,- 3 * np.sqrt(P[:, 4, 4])*m2km, '--', color = colorList[8])
-        plt.xlabel('Time (min)')
-        plt.title('Second rate component (km/s)')
-        plt.grid()
+    #     plt.figure(14, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
+    #     plt.plot(t , x[:, 5]*m2km, label=r'$v_2$ error',color = colorList[1])
+    #     plt.plot(t , 3 * np.sqrt(P[:, 4, 4])*m2km, '--', label=r'$\pm3\sigma$',color = colorList[8])
+    #     plt.plot(t ,- 3 * np.sqrt(P[:, 4, 4])*m2km, '--', color = colorList[8])
+    #     plt.xlabel('Time (min)')
+    #     plt.ylabel('Rate Error (km/s)')
+    #     plt.title('Second rate component')
+    #     plt.grid()
 
-        plt.figure(15, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
-        plt.plot(t , x[:, 8], color = colorList[1])
-        plt.plot(t , x0[1] + 3 * np.sqrt(P[:, 7, 7]), '--', color = colorList[8])
-        plt.plot(t , x0[1] - 3 * np.sqrt(P[:, 7, 7]), '--', color = colorList[8])
-        plt.title('Second bias component (km/s)')
-        plt.grid()
+    #     plt.figure(15, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
+    #     plt.plot(t , x[:, 8], label='Bias error',color = colorList[1])
+    #     plt.plot(t , x0[1] + 3 * np.sqrt(P[:, 7, 7]), '--', label=r'$\pm3\sigma$',color = colorList[8])
+    #     plt.plot(t , x0[1] - 3 * np.sqrt(P[:, 7, 7]), '--', color = colorList[8])
+    #     plt.title('Second bias component')
+    #     plt.ylabel('Bias Error (km/s)')
+    #     plt.xlabel('Time (min)')
+    #     plt.grid()
 
-        plt.figure(16, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
-        plt.plot(t , x[:, 3]*m2km, color = colorList[1])
-        plt.plot(t , 3 * np.sqrt(P[:, 2, 2])*m2km, '--', color = colorList[8])
-        plt.plot(t ,-3 * np.sqrt(P[:, 2, 2])*m2km, '--', color = colorList[8])
-        plt.xlabel('Time (min)')
-        plt.title('Third pos component (km)')
-        plt.grid()
+    #     plt.figure(16, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
+    #     plt.plot(t , x[:, 3]*m2km,  label=r'$r_3$ error',color = colorList[1])
+    #     plt.plot(t , 3 * np.sqrt(P[:, 2, 2])*m2km, '--',label=r'$\pm3\sigma$', color = colorList[8])
+    #     plt.plot(t ,-3 * np.sqrt(P[:, 2, 2])*m2km, '--', color = colorList[8])
+    #     plt.xlabel('Time (min)')
+    #     plt.ylabel('Position Error (km)')
+    #     plt.title('Third position component')
+    #     plt.grid()
 
-        plt.figure(17, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
-        plt.plot(t , x[:, 6]*m2km, color = colorList[1])
-        plt.plot(t , 3 * np.sqrt(P[:, 5, 5])*m2km, '--', color = colorList[8])
-        plt.plot(t , -3 * np.sqrt(P[:, 5, 5])*m2km, '--', color = colorList[8])
-        plt.xlabel('Time (min)')
-        plt.title('Third rate component (km/s)')
-        plt.grid()
+    #     plt.figure(17, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
+    #     plt.plot(t , x[:, 6]*m2km,label=r'$v_3$ error', color = colorList[1])
+    #     plt.plot(t , 3 * np.sqrt(P[:, 5, 5])*m2km, '--',label=r'$\pm3\sigma$', color = colorList[8])
+    #     plt.plot(t , -3 * np.sqrt(P[:, 5, 5])*m2km, '--', color = colorList[8])
+    #     plt.xlabel('Time (min)')
+    #     plt.ylabel('Rate Error (km/s)')
+    #     plt.title('Third rate component')
+    #     plt.grid()
 
-        plt.figure(18, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
-        plt.plot(t , x[:, 9], color = colorList[1])
-        plt.plot(t , x0[2] + 3 * np.sqrt(P[:, 8, 8]), '--', color = colorList[8])
-        plt.plot(t , x0[2] - 3 * np.sqrt(P[:, 8, 8]), '--', color = colorList[8])
-        plt.title('Third bias component (km/s)')
-        plt.grid()
+    #     plt.figure(18, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
+    #     plt.plot(t , x[:, 9],label='Bias error', color = colorList[1])
+    #     plt.plot(t , x0[2] + 3 * np.sqrt(P[:, 8, 8]), '--',label=r'$\pm3\sigma$', color = colorList[8])
+    #     plt.plot(t , x0[2] - 3 * np.sqrt(P[:, 8, 8]), '--', color = colorList[8])
+    #     plt.title('Third bias component')
+    #     plt.ylabel('Bias Error (km/s)')
+    #     plt.xlabel('Time (min)')
+    #     plt.grid()
+    
+    if numStates == 9:
+        # Create a 3x3 figure:
+        # Row 1: Position errors
+        # Row 2: Velocity errors
+        # Row 3: Bias errors
+        fig, axes = plt.subplots(3, 3, figsize=(10, 7.5), sharex=True)
 
-    if numStates == 6 or numStates ==3:
-        plt.figure(20, figsize=(2.4, 1.4), facecolor='w', edgecolor='k')
-        plt.plot(t , x[:, 1]*m2km, label='State Error', color = colorList[1])
-        plt.plot(t , 3 * np.sqrt(P[:, 0, 0])*m2km, '--',  label=r'Covar (3-$\sigma$)', color = colorList[8])
-        plt.plot(t ,- 3 * np.sqrt(P[:, 0, 0])*m2km, '--', color = colorList[8])
-        plt.legend(loc='best')
-        plt.ylabel(r'$r_1$ Error (km)')
-        #plt.savefig('Filterpos1.pdf')
+        # State/error indices in x
+        position_idx = [1, 2, 3]
+        velocity_idx = [4, 5, 6]
+        bias_idx = [7, 8, 9]
+
+        # Corresponding covariance diagonal indices
+        position_P_idx = [0, 1, 2]
+        velocity_P_idx = [3, 4, 5]
+        bias_P_idx = [6, 7, 8]
+
+        # Titles
+        position_titles = [r'Position $x$', r'Position $y$', r'Position $z$']
+        velocity_titles = [r'Velocity $x$', r'Velocity $y$', r'Velocity $z$']
+        bias_titles = [r'Bias $x$', r'Bias $y$', r'Bias $z$']
+
+        # Plot position, velocity and bias states
+        for i in range(3):
+
+            # -------------------------
+            # Position
+            # -------------------------
+            ax = axes[0, i]
+
+            ax.plot(t,
+                    x[:, position_idx[i]] * m2km,
+                    color=colorList[1],
+                    label='State error')
+            ax.plot(t,
+                    3 * np.sqrt(P[:, position_P_idx[i],
+                                   position_P_idx[i]]) * m2km,
+                    '--',
+                    color=colorList[8],
+                    label=r'$\pm3\sigma$')
+            ax.plot(t,
+                    -3 * np.sqrt(P[:, position_P_idx[i],
+                                    position_P_idx[i]]) * m2km,
+                    '--',
+                    color=colorList[8])
+
+            ax.set_title(position_titles[i])
+            ax.set_ylabel('Error (km)')
+            ax.grid(True)
+
+            # -------------------------
+            # Velocity
+            # -------------------------
+            ax = axes[1, i]
+
+            ax.plot(t,
+                    x[:, velocity_idx[i]] * m2km,
+                    color=colorList[1],
+                    label='State error')
+            ax.plot(t,
+                    3 * np.sqrt(P[:, velocity_P_idx[i],
+                                   velocity_P_idx[i]]) * m2km,
+                    '--',
+                    color=colorList[8],
+                    label=r'$\pm3\sigma$')
+            ax.plot(t,
+                    -3 * np.sqrt(P[:, velocity_P_idx[i],
+                                    velocity_P_idx[i]]) * m2km,
+                    '--',
+                    color=colorList[8])
+
+            ax.set_title(velocity_titles[i])
+            ax.set_ylabel('Error (km/s)')
+            ax.grid(True)
+
+            # -------------------------
+            # Bias
+            # -------------------------
+            ax = axes[2, i]
+
+            ax.plot(t,
+                    x[:, bias_idx[i]],
+                    color=colorList[1],
+                    label='State error')
+            ax.plot(t,
+                    x0[i] + 3 * np.sqrt(P[:, bias_P_idx[i],
+                                           bias_P_idx[i]]),
+                    '--',
+                    color=colorList[8],
+                    label=r'$\pm3\sigma$')
+            ax.plot(t,
+                    x0[i] - 3 * np.sqrt(P[:, bias_P_idx[i],
+                                           bias_P_idx[i]]),
+                    '--',
+                    color=colorList[8])
+
+            ax.set_title(bias_titles[i])
+            ax.set_ylabel('Error (km/s)')
+            ax.grid(True)
+
+        # X-axis labels only on bottom row
+        for ax in axes[2, :]:
+            ax.set_xlabel('Time (min)')
+
+        # One common legend for the entire figure
+        handles, labels = axes[0, 0].get_legend_handles_labels()
+        fig.legend(handles, labels,
+                   loc='upper center',
+                   ncol=2,
+                   bbox_to_anchor=(0.5, 1.02))
+
+        fig.suptitle('State Estimation Errors and 3-$\sigma$ Covariance',
+                     y=1.06)
+
+        # Adjust spacing
+        plt.tight_layout()
+        
+    # if numStates == 6 or numStates ==3:
+    #     plt.figure(20, figsize=(2.4, 1.4), facecolor='w', edgecolor='k')
+    #     plt.plot(t , x[:, 1]*m2km, label='State Error', color = colorList[1])
+    #     plt.plot(t , 3 * np.sqrt(P[:, 0, 0])*m2km, '--',  label=r'$\pm3\sigma$',color = colorList[8])
+    #     plt.plot(t ,- 3 * np.sqrt(P[:, 0, 0])*m2km, '--', color = colorList[8])
+    #     plt.legend(loc='best')
+    #     plt.ylabel(r'$r_1$ Error (km)')
+    #     #plt.savefig('Filterpos1.pdf')
+
+    # if numStates == 6:
+    #     plt.figure(21, figsize=(2.4, 1.4), facecolor='w', edgecolor='k')
+    #     plt.plot(t , x[:, 4]*m2km, color = colorList[1])
+    #     plt.plot(t , 3 * np.sqrt(P[:, 3, 3])*m2km, '--', label=r'$\pm3\sigma$',color = colorList[8])
+    #     plt.plot(t ,- 3 * np.sqrt(P[:, 3, 3])*m2km, '--', color = colorList[8])
+    #     plt.ylabel(r'$v_1$ Error (km/s)')
+    #     #plt.savefig('Filtervel1.pdf')
+
+    # if numStates == 6 or numStates ==3:
+    #     plt.figure(22, figsize=(2.4, 1.4), facecolor='w', edgecolor='k')
+    #     plt.plot(t , x[:, 2]*m2km, color = colorList[1])
+    #     plt.plot(t , 3 * np.sqrt(P[:, 1, 1])*m2km, '--', label=r'$\pm3\sigma$',color = colorList[8])
+    #     plt.plot(t ,- 3 * np.sqrt(P[:, 1, 1])*m2km, '--', color = colorList[8])
+    #     plt.ylabel(r'$r_2$ Error (km)')
+    #     #plt.savefig('Filterpos2.pdf')
+
+    # if numStates == 6:
+    #     plt.figure(23, figsize=(2.4, 1.4), facecolor='w', edgecolor='k')
+    #     plt.plot(t , x[:, 5]*m2km, color = colorList[1])
+    #     plt.plot(t , 3 * np.sqrt(P[:, 4, 4])*m2km, '--',label=r'$\pm3\sigma$', color = colorList[8])
+    #     plt.plot(t ,- 3 * np.sqrt(P[:, 4, 4])*m2km, '--', color = colorList[8])
+    #     plt.ylabel(r'$v_2$ Error (km/s)')
+    #     #plt.savefig('Filtervel2.pdf')
+
+    # if numStates == 6 or numStates ==3:
+    #     plt.figure(24, figsize=(2.4, 1.4), facecolor='w', edgecolor='k')
+    #     plt.plot(t , x[:, 3]*m2km, color = colorList[1])
+    #     plt.plot(t , 3 * np.sqrt(P[:, 2, 2])*m2km, '--',label=r'$\pm3\sigma$', color = colorList[8])
+    #     plt.plot(t ,-3 * np.sqrt(P[:, 2, 2])*m2km, '--', color = colorList[8])
+    #     plt.xlabel('Time (min)')
+    #     plt.ylabel(r'$r_3$ Error (km)')
+    #     #plt.savefig('Filterpos3.pdf')
+
+    # if numStates == 6:
+    #     plt.figure(25, figsize=(2.4, 1.4), facecolor='w', edgecolor='k')
+    #     plt.plot(t , x[:, 6]*m2km, color = colorList[1])
+    #     plt.plot(t , 3 * np.sqrt(P[:, 5, 5])*m2km, '--',label=r'$\pm3\sigma$', color = colorList[8])
+    #     plt.plot(t , -3 * np.sqrt(P[:, 5, 5])*m2km, '--', color = colorList[8])
+    #     plt.xlabel('Time (min)')
+    #     plt.ylabel(r'$v_3$ Error (km/s)')
+    #     #plt.savefig('Filtervel3.pdf')
 
     if numStates == 6:
-        plt.figure(21, figsize=(2.4, 1.4), facecolor='w', edgecolor='k')
-        plt.plot(t , x[:, 4]*m2km, color = colorList[1])
-        plt.plot(t , 3 * np.sqrt(P[:, 3, 3])*m2km, '--', color = colorList[8])
-        plt.plot(t ,- 3 * np.sqrt(P[:, 3, 3])*m2km, '--', color = colorList[8])
-        plt.ylabel(r'$v_1$ Error (km/s)')
-        #plt.savefig('Filtervel1.pdf')
+        # Create a 2x3 figure:
+        # Row 1: Position errors
+        # Row 2: Velocity errors
+        fig, axes = plt.subplots(2, 3, figsize=(10, 5.5),
+                                 sharex=True)
 
-    if numStates == 6 or numStates ==3:
-        plt.figure(22, figsize=(2.4, 1.4), facecolor='w', edgecolor='k')
-        plt.plot(t , x[:, 2]*m2km, color = colorList[1])
-        plt.plot(t , 3 * np.sqrt(P[:, 1, 1])*m2km, '--', color = colorList[8])
-        plt.plot(t ,- 3 * np.sqrt(P[:, 1, 1])*m2km, '--', color = colorList[8])
-        plt.ylabel(r'$r_2$ Error (km)')
-        #plt.savefig('Filterpos2.pdf')
+        # State/error indices in x
+        position_idx = [1, 2, 3]
+        velocity_idx = [4, 5, 6]
 
-    if numStates == 6:
-        plt.figure(23, figsize=(2.4, 1.4), facecolor='w', edgecolor='k')
-        plt.plot(t , x[:, 5]*m2km, color = colorList[1])
-        plt.plot(t , 3 * np.sqrt(P[:, 4, 4])*m2km, '--', color = colorList[8])
-        plt.plot(t ,- 3 * np.sqrt(P[:, 4, 4])*m2km, '--', color = colorList[8])
-        plt.ylabel(r'$v_2$ Error (km/s)')
-        #plt.savefig('Filtervel2.pdf')
+        # Corresponding covariance diagonal indices
+        position_P_idx = [0, 1, 2]
+        velocity_P_idx = [3, 4, 5]
 
-    if numStates == 6 or numStates ==3:
-        plt.figure(24, figsize=(2.4, 1.4), facecolor='w', edgecolor='k')
-        plt.plot(t , x[:, 3]*m2km, color = colorList[1])
-        plt.plot(t , 3 * np.sqrt(P[:, 2, 2])*m2km, '--', color = colorList[8])
-        plt.plot(t ,-3 * np.sqrt(P[:, 2, 2])*m2km, '--', color = colorList[8])
-        plt.xlabel('Time (min)')
-        plt.ylabel(r'$r_3$ Error (km)')
-        #plt.savefig('Filterpos3.pdf')
+        # Titles
+        position_titles = [
+            r'Position $x$',
+            r'Position $y$',
+            r'Position $z$'
+        ]
 
-    if numStates == 6:
-        plt.figure(25, figsize=(2.4, 1.4), facecolor='w', edgecolor='k')
-        plt.plot(t , x[:, 6]*m2km, color = colorList[1])
-        plt.plot(t , 3 * np.sqrt(P[:, 5, 5])*m2km, '--', color = colorList[8])
-        plt.plot(t , -3 * np.sqrt(P[:, 5, 5])*m2km, '--', color = colorList[8])
-        plt.xlabel('Time (min)')
-        plt.ylabel(r'$v_3$ Error (km/s)')
-        #plt.savefig('Filtervel3.pdf')
+        velocity_titles = [
+            r'Velocity $x$',
+            r'Velocity $y$',
+            r'Velocity $z$'
+        ]
 
+        for i in range(3):
+
+            # -------------------------
+            # Position
+            # -------------------------
+            ax = axes[0, i]
+
+            ax.plot(
+                t,
+                x[:, position_idx[i]] * m2km,
+                color=colorList[1],
+                label='State error'
+            )
+
+            sigma = 3 * np.sqrt(
+                P[:, position_P_idx[i], position_P_idx[i]]
+            ) * m2km
+
+            ax.plot(
+                t, sigma,
+                '--',
+                color=colorList[8],
+                label=r'$\pm3\sigma$'
+            )
+
+            ax.plot(
+                t, -sigma,
+                '--',
+                color=colorList[8]
+            )
+
+            ax.set_title(position_titles[i])
+            ax.set_ylabel('Error (km)')
+            ax.grid(True)
+
+            # -------------------------
+            # Velocity
+            # -------------------------
+            ax = axes[1, i]
+
+            ax.plot(
+                t,
+                x[:, velocity_idx[i]] * m2km,
+                color=colorList[1],
+                label='State error'
+            )
+
+            sigma = 3 * np.sqrt(
+                P[:, velocity_P_idx[i], velocity_P_idx[i]]
+            ) * m2km
+
+            ax.plot(
+                t, sigma,
+                '--',
+                color=colorList[8],
+                label=r'$\pm3\sigma$'
+            )
+
+            ax.plot(
+                t, -sigma,
+                '--',
+                color=colorList[8]
+            )
+
+            ax.set_title(velocity_titles[i])
+            ax.set_ylabel('Error (km/s)')
+            ax.set_xlabel('Time (min)')
+            ax.grid(True)
+
+        # One common legend for the entire figure
+        handles, labels = axes[0, 0].get_legend_handles_labels()
+
+        fig.legend(
+            handles,
+            labels,
+            loc='lower center',
+            ncol=2,
+            bbox_to_anchor=(0.5, 1.02)
+        )
+
+        fig.suptitle(
+            'State Estimation Errors and 3-$\sigma$ Covariance',
+            y=0.98
+        )
+
+        plt.tight_layout(rect=[0, 0.07, 1, 0.94])
+
+    if numStates == 3:
+
+        fig, axes = plt.subplots(3, 1, figsize=(6, 7),
+                                 sharex=True)
+
+        position_idx = [1, 2, 3]
+        covariance_idx = [0, 1, 2]
+
+        position_titles = [
+            r'Position $x$',
+            r'Position $y$',
+            r'Position $z$'
+        ]
+
+        for i in range(3):
+
+            ax = axes[i]
+
+            sigma = 3 * np.sqrt(
+                P[:, covariance_idx[i], covariance_idx[i]]
+            ) * m2km
+
+            ax.plot(
+                t,
+                x[:, position_idx[i]] * m2km,
+                color=colorList[1],
+                label='State error'
+            )
+
+            ax.plot(
+                t,
+                sigma,
+                '--',
+                color=colorList[8],
+                label=r'$\pm3\sigma$'
+            )
+
+            ax.plot(
+                t,
+                -sigma,
+                '--',
+                color=colorList[8]
+            )
+
+            ax.set_title(position_titles[i])
+            ax.set_ylabel('Error (km)')
+            ax.grid(True)
+
+        axes[-1].set_xlabel('Time (min)')
+
+        handles, labels = axes[0].get_legend_handles_labels()
+
+        fig.legend(
+            handles,
+            labels,
+            loc='upper center',
+            ncol=2,
+            bbox_to_anchor=(0.5, 1.01)
+        )
+
+        fig.suptitle(
+            'Position State Errors and 3-$\sigma$ Covariance',
+            y=1.05
+        )
+
+        plt.tight_layout()
 
 def centerXY(centerPoints, size):
 
@@ -730,68 +1150,207 @@ def imgProcVsExp(true, centers, radii, size):
         if found == 0:
             centerline[i,:] = np.array([np.nan,np.nan])
 
-    plt.figure(301, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
-    # plt.figure(301, figsize=(3.5, 2.), facecolor='w', edgecolor='k')
-    plt.rcParams["font.size"] = "8"
-    plt.plot(t, true[:, 1], "+", label='Truth Xpix', color = colorList[1])
-    plt.plot(t, centerline[:,0], "--", label='X-center', color = colorList[9])
-    plt.plot(t, centers[:, 1], '.', label = "ImagProc Xpix", color = colorList[5], alpha=0.7)
-    plt.legend(loc='best')
-    try:
-        plt.ylim([centerline[-1,1]-15, centerline[-1,1]+15])
-    except ValueError:
-        pass
-    plt.ylabel('X (px)')
-    plt.xlabel('Time (min)')
-    #plt.savefig('Xpix.pdf')
+    # plt.figure(301, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
+    # # plt.figure(301, figsize=(3.5, 2.), facecolor='w', edgecolor='k')
+    # plt.rcParams["font.size"] = "8"
+    # plt.plot(t, true[:, 1], "+", label='Truth Xpix', color = colorList[1])
+    # plt.plot(t, centerline[:,0], "--", label='X-center', color = colorList[9])
+    # plt.plot(t, centers[:, 1], '.', label = "ImagProc Xpix", color = colorList[5], alpha=0.7)
+    # plt.legend(loc='best')
+    # try:
+    #     plt.ylim([centerline[-1,1]-15, centerline[-1,1]+15])
+    # except ValueError:
+    #     pass
+    # plt.ylabel('X (px)')
+    # plt.xlabel('Time (min)')
+    # #plt.savefig('Xpix.pdf')
 
-    plt.figure(302, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
-    # plt.figure(302, figsize=(3.5, 2.), facecolor='w', edgecolor='k')
-    plt.plot(t, true[:, 2], "+", label='Truth Ypix', color = colorList[1])
-    plt.plot(t, centerline[:,1], "--", label='Y-center', color = colorList[9])
-    plt.plot(t, centers[:, 2], '.', label = "ImagProc Ypix", color = colorList[5], alpha=0.7)
-    plt.legend(loc='best')
-    try:
-        plt.ylim([centerline[-1,1]-15, centerline[-1,1]+15])
-    except ValueError:
-        pass
-    plt.ylabel('Y (px)')
-    plt.xlabel('Time (min)')
-    #plt.savefig('Ypix.pdf')
+    # plt.figure(302, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
+    # # plt.figure(302, figsize=(3.5, 2.), facecolor='w', edgecolor='k')
+    # plt.plot(t, true[:, 2], "+", label='Truth Ypix', color = colorList[1])
+    # plt.plot(t, centerline[:,1], "--", label='Y-center', color = colorList[9])
+    # plt.plot(t, centers[:, 2], '.', label = "ImagProc Ypix", color = colorList[5], alpha=0.7)
+    # plt.legend(loc='best')
+    # try:
+    #     plt.ylim([centerline[-1,1]-15, centerline[-1,1]+15])
+    # except ValueError:
+    #     pass
+    # plt.ylabel('Y (px)')
+    # plt.xlabel('Time (min)')
+    # #plt.savefig('Ypix.pdf')
+
+    fig, axes = plt.subplots(2, 1, figsize=(6, 5.5),
+                             sharex=True)
+
+    # -------------------------
+    # X pixel
+    # -------------------------
+    ax = axes[0]
+
+    ax.plot(
+        t,
+        true[:, 1],
+        "+",
+        label='Truth Xpix',
+        color=colorList[1]
+    )
+
+    ax.plot(
+        t,
+        centerline[:, 0],
+        "--",
+        label='X-center',
+        color=colorList[9]
+    )
+
+    ax.plot(
+        t,
+        centers[:, 1],
+        ".",
+        label="ImageProc Xpix",
+        color=colorList[5],
+        alpha=0.7
+    )
+
+    ax.set_ylabel("X (px)")
+    ax.set_title("X Pixel")
+    ax.legend(loc='best')
+    ax.grid(True)
+
+    # -------------------------
+    # Y pixel
+    # -------------------------
+    ax = axes[1]
+
+    ax.plot(
+        t,
+        true[:, 2],
+        "+",
+        label='Truth Ypix',
+        color=colorList[1]
+    )
+
+    ax.plot(
+        t,
+        centerline[:, 1],
+        "--",
+        label='Y-center',
+        color=colorList[9]
+    )
+
+    ax.plot(
+        t,
+        centers[:, 2],
+        ".",
+        label="ImageProc Ypix",
+        color=colorList[5],
+        alpha=0.7
+    )
+
+    ax.set_ylabel("Y (px)")
+    ax.set_xlabel("Time (min)")
+    ax.set_title("Y Pixel")
+    ax.legend(loc='best')
+    ax.grid(True)
+
+    fig.suptitle("Image Processing Pixel Measurements")
+    plt.tight_layout(rect=[0, 0, 1, 0.94])    
 
     plt.figure(312, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
     # plt.figure(312, figsize=(3.5, 2.), facecolor='w', edgecolor='k')
     plt.plot(t, true[:, 3], "+", label=r'Truth $\rho$', color = colorList[1])
     plt.plot(t, radii[:, 1],'.',  label = r"ImagProc $\rho$", color = colorList[5], alpha=0.7)
-    plt.legend(loc='best')
-    plt.ylabel(r'$\rho$ (px)')
+    plt.title('Lunar Limb Radius: Truth vs. Image Processing')
+    plt.ylabel(r'Circle Radius $\rho$ (px)')
     plt.xlabel('Time (min)')
+    plt.legend(loc='best')
+    plt.grid(True)
     #plt.savefig('Rhopix.pdf')
 
 
-    plt.figure(303, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
-    # plt.figure(303, figsize=(3.5, 2.), facecolor='w', edgecolor='k')
-    plt.plot(t, true[:, 1] - centers[:, 1], ".", label=r'$\mathrm{X}_\mathrm{true} - \mathrm{X}_\mathrm{hough}$', color = colorList[1])
-    plt.legend(loc='best')
-    plt.ylabel('X error (px)')
-    plt.grid()
-    #plt.savefig('Xerror.pdf')
+    # plt.figure(303, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
+    # # plt.figure(303, figsize=(3.5, 2.), facecolor='w', edgecolor='k')
+    # plt.plot(t, true[:, 1] - centers[:, 1], ".", label=r'$\mathrm{X}_\mathrm{true} - \mathrm{X}_\mathrm{hough}$', color = colorList[1])
+    # plt.legend(loc='best')
+    # plt.ylabel('X error (px)')
+    # plt.grid()
+    # #plt.savefig('Xerror.pdf')
 
-    plt.figure(304, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
-    # plt.figure(304, figsize=(3.5, 2.), facecolor='w', edgecolor='k')
-    plt.plot(t, true[:, 2] - centers[:, 2], ".", label=r'$\mathrm{Y}_\mathrm{true} - \mathrm{Y}_\mathrm{hough}$', color = colorList[1])
-    plt.legend(loc='best')
-    plt.ylabel('Y error (px)')
-    plt.grid()
-    #plt.savefig('Yerror.pdf')
+    # plt.figure(304, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
+    # # plt.figure(304, figsize=(3.5, 2.), facecolor='w', edgecolor='k')
+    # plt.plot(t, true[:, 2] - centers[:, 2], ".", label=r'$\mathrm{Y}_\mathrm{true} - \mathrm{Y}_\mathrm{hough}$', color = colorList[1])
+    # plt.legend(loc='best')
+    # plt.ylabel('Y error (px)')
+    # plt.grid()
+    # #plt.savefig('Yerror.pdf')
 
-    plt.figure(305, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
-    # plt.figure(305, figsize=(3.5, 2.), facecolor='w', edgecolor='k')
-    plt.plot(t, true[:, 3] - radii[:, 1], ".", label=r'$\mathrm{\rho}_\mathrm{true} - \mathrm{\rho}_\mathrm{hough}$', color = colorList[1])
-    plt.legend(loc='best')
-    plt.ylabel('Radius error (px)')
-    plt.xlabel("Time (min)")
-    plt.grid()
+    # plt.figure(305, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
+    # # plt.figure(305, figsize=(3.5, 2.), facecolor='w', edgecolor='k')
+    # plt.plot(t, true[:, 3] - radii[:, 1], ".", label=r'$\mathrm{\rho}_\mathrm{true} - \mathrm{\rho}_\mathrm{hough}$', color = colorList[1])
+    # plt.legend(loc='best')
+    # plt.ylabel('Radius error (px)')
+    # plt.xlabel("Time (min)")
+    # plt.grid()
+    fig, axes = plt.subplots(3, 1, figsize=(6, 7),
+                             sharex=True)
+
+    # -------------------------
+    # X error
+    # -------------------------
+    ax = axes[0]
+
+    ax.plot(
+        t,
+        true[:, 1] - centers[:, 1],
+        ".",
+        label=r'$\mathrm{X}_{\mathrm{true}}-\mathrm{X}_{\mathrm{hough}}$',
+        color=colorList[1]
+    )
+
+    ax.set_ylabel("X error (px)")
+    ax.set_title("X Error")
+    ax.legend(loc='best')
+    ax.grid(True)
+
+    # -------------------------
+    # Y error
+    # -------------------------
+    ax = axes[1]
+
+    ax.plot(
+        t,
+        true[:, 2] - centers[:, 2],
+        ".",
+        label=r'$\mathrm{Y}_{\mathrm{true}}-\mathrm{Y}_{\mathrm{hough}}$',
+        color=colorList[1]
+    )
+
+    ax.set_ylabel("Y error (px)")
+    ax.set_title("Y Error")
+    ax.legend(loc='best')
+    ax.grid(True)
+
+    # -------------------------
+    # Radius error
+    # -------------------------
+    ax = axes[2]
+
+    ax.plot(
+        t,
+        true[:, 3] - radii[:, 1],
+        ".",
+        label=r'$\rho_{\mathrm{true}}-\rho_{\mathrm{hough}}$',
+        color=colorList[1]
+    )
+
+    ax.set_ylabel("Radius error (px)")
+    ax.set_xlabel("Time (min)")
+    ax.set_title("Radius Error")
+    ax.legend(loc='best')
+    ax.grid(True)
+
+    fig.suptitle("Image Processing Errors")
+    plt.tight_layout(rect=[0, 0, 1, 0.94])
     #plt.savefig('Rhoerror.pdf')
 
 
@@ -821,44 +1380,99 @@ def plotPostFitResiduals(Res, noise):
             if -1E-10 < Res[i,j+1] < 1E-10:
                 Res[i, j+1] = np.nan
     if len(Res[0,:])-1 == 3:
-        plt.figure(401, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
-        plt.plot(t , Res[:, 1]*m2km, ".", label='Residual', color = colorList[1])
-        plt.plot(t , MeasNoise[:,0]*m2km, '--', label=r'Noise ($3\sigma$)', color = colorList[8])
-        plt.plot(t , -MeasNoise[:,0]*m2km, '--', color = colorList[8])
-        plt.legend(loc=2)
-        max = np.amax(MeasNoise[:,0])
-        if max >1E-15:
-            plt.ylim([-2*max*m2km, 2*max*m2km])
-        plt.ylabel(r'$r_1$ Measured (km)')
-        plt.xlabel("Time (min)")
-        plt.grid()
-        #plt.savefig('Res1.pdf')
+        # plt.figure(401, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
+        # plt.plot(t , Res[:, 1]*m2km, ".", label='Residual', color = colorList[1])
+        # plt.plot(t , MeasNoise[:,0]*m2km, '--', label=r'Noise ($3\sigma$)', color = colorList[8])
+        # plt.plot(t , -MeasNoise[:,0]*m2km, '--', color = colorList[8])
+        # plt.legend(loc=2)
+        # max = np.amax(MeasNoise[:,0])
+        # if max >1E-15:
+        #     plt.ylim([-2*max*m2km, 2*max*m2km])
+        # plt.ylabel(r'$r_1$ Measured (km)')
+        # plt.xlabel("Time (min)")
+        # plt.grid()
+        # #plt.savefig('Res1.pdf')
 
-        plt.figure(402, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
-        plt.plot(t , Res[:, 2]*m2km, ".",  color = colorList[1])
-        plt.plot(t , MeasNoise[:,1]*m2km, '--',  color = colorList[8])
-        plt.plot(t , -MeasNoise[:,1]*m2km, '--',  color = colorList[8])
-        max = np.amax(MeasNoise[:,1])
-        if max >1E-15:
-            plt.ylim([-2*max*m2km, 2*max*m2km])
-        plt.ylabel(r'$r_2$ Measured (km)')
-        plt.xlabel("Time (min)")
-        plt.grid()
-        #plt.savefig('Res2.pdf')
+        # plt.figure(402, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
+        # plt.plot(t , Res[:, 2]*m2km, ".",  color = colorList[1])
+        # plt.plot(t , MeasNoise[:,1]*m2km, '--',  color = colorList[8])
+        # plt.plot(t , -MeasNoise[:,1]*m2km, '--',  color = colorList[8])
+        # max = np.amax(MeasNoise[:,1])
+        # if max >1E-15:
+        #     plt.ylim([-2*max*m2km, 2*max*m2km])
+        # plt.ylabel(r'$r_2$ Measured (km)')
+        # plt.xlabel("Time (min)")
+        # plt.grid()
+        # #plt.savefig('Res2.pdf')
 
 
-        plt.figure(403, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
-        plt.plot(t , Res[:, 3]*m2km, ".",  color = colorList[1])
-        plt.plot(t , MeasNoise[:,2]*m2km, '--',  color = colorList[8])
-        plt.plot(t , -MeasNoise[:,2]*m2km, '--',  color = colorList[8])
-        max = np.amax(MeasNoise[:,2])
-        if max >1E-15:
-            plt.ylim([-2*max*m2km, 2*max*m2km])
-        plt.ylabel(r'$r_3$ Measured (km)')
-        plt.xlabel("Time (min)")
-        plt.grid()
-        #plt.savefig('Res3.pdf')
+        # plt.figure(403, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
+        # plt.plot(t , Res[:, 3]*m2km, ".",  color = colorList[1])
+        # plt.plot(t , MeasNoise[:,2]*m2km, '--',  color = colorList[8])
+        # plt.plot(t , -MeasNoise[:,2]*m2km, '--',  color = colorList[8])
+        # max = np.amax(MeasNoise[:,2])
+        # if max >1E-15:
+        #     plt.ylim([-2*max*m2km, 2*max*m2km])
+        # plt.ylabel(r'$r_3$ Measured (km)')
+        # plt.xlabel("Time (min)")
+        # plt.grid()
+        # #plt.savefig('Res3.pdf')
+        fig, axes = plt.subplots(3, 1, figsize=(6, 7),
+                                 sharex=True)
 
+        residual_indices = [1, 2, 3]
+        noise_indices = [0, 1, 2]
+
+        for i in range(3):
+
+            ax = axes[i]
+
+            ax.plot(
+                t,
+                Res[:, residual_indices[i]] * m2km,
+                ".",
+                color=colorList[1],
+                label="Residual"
+            )
+
+            ax.plot(
+                t,
+                MeasNoise[:, noise_indices[i]] * m2km,
+                "--",
+                color=colorList[8],
+                label=r"Noise ($3\sigma$)"
+            )
+
+            ax.plot(
+                t,
+                -MeasNoise[:, noise_indices[i]] * m2km,
+                "--",
+                color=colorList[8]
+            )
+
+            max_noise = np.amax(MeasNoise[:, noise_indices[i]])
+
+            if max_noise > 1E-15:
+                ax.set_ylim([
+                    -2 * max_noise * m2km,
+                    2 * max_noise * m2km
+                ])
+
+            ax.set_ylabel(
+                rf'$r_{i+1}$ Measured (km)'
+            )
+
+            ax.set_title(
+                rf'$r_{i+1}$ Residual'
+            )
+
+            ax.legend(loc='best')
+            ax.grid(True)
+
+        axes[-1].set_xlabel("Time (min)")
+
+        fig.suptitle("Post-Fit Position Residuals")
+        plt.tight_layout(rect=[0, 0, 1, 0.94])
 
     if len(Res[0,:])-1 == 6:
         plt.figure(405, figsize=(2.7, 1.6), facecolor='w', edgecolor='k')
@@ -908,33 +1522,114 @@ def plotPostFitResiduals(Res, noise):
         plt.grid()
 
 def plot_cirlces(centers, radii, validity, resolution):
+    # circleIndx = []
+    # for i in range(len(centers[:,0])):
+    #     if validity[i, 1] == 1:
+    #         circleIndx.append(i)
+
+    # colorsInt = len(mpl.pyplot.get_cmap("inferno").colors)/(len(circleIndx)+1)
+    # colorList = []
+    # for i in range(len(circleIndx)):
+    #     colorList.append(mpl.pyplot.get_cmap("inferno").colors[int(i*colorsInt)])
+
+    # plt.figure(500, figsize=(3, 3), facecolor='w', edgecolor='k')
+    # ax = plt.gca()
+    # for i in range(len(circleIndx)):
+    #     if i%30 ==0:
+    #         ell_xy = Ellipse(xy=(centers[circleIndx[i],1], centers[circleIndx[i],2]),
+    #                          width=radii[circleIndx[i],1], height=radii[circleIndx[i],1],
+    #                          angle=0, linestyle='-', linewidth=3, color=colorList[i], alpha=0.7)
+    #         ell_xy.set(facecolor='none')
+    #         ax.add_patch(ell_xy)
+    #         ax.invert_yaxis()
+    # ax.set_xlim(0, resolution[0])
+    # ax.set_ylim(resolution[1],0)
+    # plt.xlabel('X-axis (px)')
+    # plt.ylabel('Y-axis (px)')
+    # plt.axis("equal")
+    # #plt.savefig('Circles.pdf')
     circleIndx = []
-    for i in range(len(centers[:,0])):
+
+    for i in range(len(centers[:, 0])):
         if validity[i, 1] == 1:
             circleIndx.append(i)
 
-    colorsInt = len(mpl.pyplot.get_cmap("inferno").colors)/(len(circleIndx)+1)
-    colorList = []
-    for i in range(len(circleIndx)):
-        colorList.append(mpl.pyplot.get_cmap("inferno").colors[int(i*colorsInt)])
+    # Only draw every 30th valid detection
+    drawn_indices = [
+        i for i in range(len(circleIndx))
+        if i % 30 == 0
+    ]
 
-    plt.figure(500, figsize=(3, 3), facecolor='w', edgecolor='k')
+    fig = plt.figure(500, figsize=(6, 5.5), facecolor='w', edgecolor='k')
     ax = plt.gca()
-    for i in range(len(circleIndx)):
-        if i%30 ==0:
-            ell_xy = Ellipse(xy=(centers[circleIndx[i],1], centers[circleIndx[i],2]),
-                             width=radii[circleIndx[i],1], height=radii[circleIndx[i],1],
-                             angle=0, linestyle='-', linewidth=3, color=colorList[i], alpha=0.7)
-            ell_xy.set(facecolor='none')
-            ax.add_patch(ell_xy)
-            ax.invert_yaxis()
-    ax.set_xlim(0, resolution[0])
-    ax.set_ylim(resolution[1],0)
-    plt.xlabel('X-axis (px)')
-    plt.ylabel('Y-axis (px)')
-    plt.axis("equal")
-    #plt.savefig('Circles.pdf')
 
+    # Color progression: first -> last
+    cmap = plt.get_cmap("inferno")
+
+    for j, i in enumerate(drawn_indices):
+
+        idx = circleIndx[i]
+
+        if len(drawn_indices) > 1:
+            color_value = j / (len(drawn_indices) - 1)
+        else:
+            color_value = 0.0
+
+        ell_xy = Ellipse(
+            xy=(centers[idx, 1], centers[idx, 2]),
+            width=radii[idx, 1],
+            height=radii[idx, 1],
+            angle=0,
+            linestyle='-',
+            linewidth=2,
+            color=cmap(color_value),
+            alpha=0.7,
+            fill=False
+        )
+
+        ax.add_patch(ell_xy)
+
+    # Colorbar
+    norm = mpl.colors.Normalize(
+        vmin=0,
+        vmax=len(drawn_indices) - 1
+    )
+
+    sm = mpl.cm.ScalarMappable(
+        cmap=cmap,
+        norm=norm
+    )
+
+    sm.set_array([])
+
+    cbar = fig.colorbar(sm, ax=ax)
+    cbar.set_label('Detection progression')
+# Zoom to the region containing the detected circles
+    x_min = np.min(centers[circleIndx, 1])
+    x_max = np.max(centers[circleIndx, 1])
+    y_min = np.min(centers[circleIndx, 2])
+    y_max = np.max(centers[circleIndx, 2])
+
+    # Include the circle radii
+    r_max = np.max(radii[circleIndx, 1])
+
+    margin = 1.1 * r_max
+
+    ax.set_xlim(x_min - margin, x_max + margin)
+    ax.set_ylim(y_max + margin, y_min - margin)
+
+    # Axes
+    # ax.set_xlim(0, resolution[0])
+    # ax.set_ylim(resolution[1], 0)
+
+    ax.set_xlabel('X pixel')
+    ax.set_ylabel('Y pixel')
+
+    ax.set_title('Detected Lunar Limb Circles')
+
+    ax.set_aspect('equal')
+
+    plt.tight_layout()
 
 def plot_limb(limbPoints, numLimb,  validity, resolution):
     indx = []
