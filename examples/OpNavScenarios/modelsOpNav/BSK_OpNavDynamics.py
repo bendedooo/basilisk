@@ -212,7 +212,7 @@ class BSKDynamicModels:
             SimBase,
             self.taskName,
             [self.scObject],
-            # , saveFile=__file__
+            saveFile=__file__,
             rwEffectorList=[self.rwStateEffector],
         )
         # setup OpNav behavior by connecting camera module config message
