@@ -93,6 +93,9 @@ class BSKDynamicModels:
 
         self.rwFactory = simIncludeRW.rwFactory()
         self.scObject = spacecraft.Spacecraft()
+        #test
+        self.targetObject = spacecraft.Spacecraft()
+        #test
         self.gravFactory = simIncludeGravBody.gravBodyFactory()
         self.extForceTorqueObject = extForceTorque.ExtForceTorque()
         self.SimpleNavObject = simpleNav.SimpleNav()
@@ -112,6 +115,9 @@ class BSKDynamicModels:
 
         # Assign initialized modules to tasks
         SimBase.AddModelToTask(self.taskName, self.scObject, 201)
+        #test
+        SimBase.AddModelToTask(self.taskName, self.targetObject, 202)
+        #test
         SimBase.AddModelToTask(self.taskName, self.SimpleNavObject, 109)
         SimBase.AddModelToTask(self.taskName, self.gravFactory.spiceObject, 200)
         SimBase.AddModelToTask(self.taskName, self.ephemObject, 199)
@@ -211,10 +217,20 @@ class BSKDynamicModels:
         self.vizInterface = vizSupport.enableUnityVisualization(
             SimBase,
             self.taskName,
-            [self.scObject],
+            # [self.scObject, self],
+            [self.scObject, self.targetObject], # test
             saveFile=__file__,
-            rwEffectorList=[self.rwStateEffector],
+            rwEffectorList=[self.rwStateEffector, None],
         )
+        #test
+        vizSupport.createCustomModel(
+            self.vizInterface,
+            modelPath="CUBE",
+            simBodiesToModify=["opnavTarget"],
+            scale=[5000000.0, 5000000.0, 5000000.0],
+        )
+        #test
+        
         # setup OpNav behavior by connecting camera module config message
         self.vizInterface.addCamMsgToModule(self.cameraMod.cameraConfigOutMsg)
         self.vizInterface.addCamMsgToModule(self.cameraMod2.cameraConfigOutMsg)
@@ -233,6 +249,40 @@ class BSKDynamicModels:
             [0.0],
         ]  # m - position vector of body-fixed point B relative to CM
         self.scObject.hub.IHubPntBc_B = simHelpers.np2EigenMatrix3d(self.I_sc)
+    
+    #test
+    def SetTargetObject(self):
+        """
+        Create a stationary visual target object for the OpNav experiment.
+        """
+        self.targetObject.ModelTag = "opnavTarget"
+        # Give it a negligible mass.
+        self.targetObject.hub.mHub = 1.0
+        # Fixed position in the Moon-centered inertial frame [m].
+        # Change these three numbers to move the target.
+        self.targetObject.hub.r_CN_NInit = np.array([
+            2.0e6,
+            -2.0e6,
+            0.0
+        ])
+        # Zero velocity -> remains stationary because it is not
+        # connected to the gravity model or any force effectors.
+        self.targetObject.hub.v_CN_NInit = np.array([
+            0.0,
+            0.0,
+            0.0
+        ])
+        self.targetObject.hub.sigma_BNInit = [
+            [0.0],
+            [0.0],
+            [0.0]
+        ]
+        self.targetObject.hub.omega_BN_BInit = [
+            [0.0],
+            [0.0],
+            [0.0]
+        ]
+    #test
 
     def SetGravityEffector(self):
         """
@@ -463,6 +513,9 @@ class BSKDynamicModels:
     # Global call to initialize every module
     def InitAllDynObjects(self, SimBase):
         self.SetSpacecraftHub()
+        #test
+        self.SetTargetObject()
+        #test
         self.SetGravityEffector()
         # self.SetSimpleGrav()
         self.SetEclipseObject()
