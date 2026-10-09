@@ -137,7 +137,7 @@ class BSKDynamicModels:
         self.cameraMod.ModelTag = "instrument"
         self.cameraMod.cameraIsOn = 1
         self.cameraMod.cameraID = 1
-        self.cameraMod.saveImages = 0
+        self.cameraMod.saveImages = 1
         # Note, the `saveDir` variable is a path to a file.  This file name is then
         # appended with the frame number.
         imgFolder = os.path.abspath(os.path.dirname(__file__)) + "/img/"

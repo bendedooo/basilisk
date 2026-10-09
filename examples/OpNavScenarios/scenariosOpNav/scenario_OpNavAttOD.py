@@ -356,7 +356,7 @@ def run(showPlots, simTime=None):
     TheScenario.log_outputs()
     TheScenario.configure_initial_conditions()
 
-    TheBSKSim.get_DynModel().cameraMod.saveImages = 0
+    TheBSKSim.get_DynModel().cameraMod.saveImages = 1
     # liveStream is used for viewing the spacecraft as it navigates, noDisplay is for headless camera simulation
     #TheBSKSim.get_DynModel().vizInterface.noDisplay = True
     TheBSKSim.get_DynModel().vizInterface.noDisplay = False

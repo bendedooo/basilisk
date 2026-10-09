@@ -56,7 +56,7 @@ In order to call Vizard from python simulations, the path to the downloaded Viza
 If needed, adjust the following line illustrated below to reflect the path to the Vizard binary::
 
     # TODO : Modify the path to the viz here
-    appPath = '/Applications/Vizard.app/Contents/MacOS/Vizard' #If on Mac
+    appPath = '/Users/dedo/VizardBuilds/Vizard-AlbedoTest.app/Contents/MacOS/Vizard' #If on Mac
 
 The Vizard app must therefore be downloaded, and this path must reflect it's position in the file structure, and its
 name. If the path is not properly set, the OpNav simulations will hang (printing that it is waiting for the
@@ -119,7 +119,7 @@ path = os.path.dirname(os.path.abspath(filename))
 sys.path.append(path + '/modelsOpNav')
 
 # TODO : Modify the path to the viz here
-appPath = '/Applications/Vizard.app/Contents/MacOS/Vizard' #If on Mac
+appPath = '/Users/dedo/VizardBuilds/Vizard-AlbedoTest.app/Contents/MacOS/Vizard' #If on Mac
 # appPath = './../../Applications/Vizard.app' #If on Linux
 
 
