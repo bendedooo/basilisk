@@ -372,7 +372,7 @@ def run(showPlots, simTime=None):
     # Initialize simulation
     TheBSKSim.InitializeSimulation()
     # Configure run time and execute simulation
-    simulationTime = macros.min2nano(3.)
+    simulationTime = macros.sec2nano(3.0)  # short initialization stage
     TheBSKSim.ConfigureStopTime(simulationTime)
     print('Starting Execution')
     t1 = time.time()
@@ -382,9 +382,9 @@ def run(showPlots, simTime=None):
     if TheScenario.filterUse == "relOD":
         TheScenario.masterSim.modeRequest = 'OpNavAttOD'
     if simTime != None:
-        simulationTime = macros.min2nano(simTime)
+        simulationTime = macros.sec2nano(simTime)  # simTime is in seconds
     else:
-        simulationTime = macros.min2nano(125)
+        simulationTime = macros.sec2nano(5.0)  # short camera-rate smoke test
     TheBSKSim.ConfigureStopTime(simulationTime)
     TheBSKSim.ExecuteSimulation()
     t2 = time.time()
