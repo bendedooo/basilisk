@@ -384,7 +384,7 @@ def run(showPlots, simTime=None):
     if simTime != None:
         simulationTime = macros.min2nano(simTime)
     else:
-        simulationTime = macros.min2nano(600)
+        simulationTime = macros.min2nano(125)
     TheBSKSim.ConfigureStopTime(simulationTime)
     TheBSKSim.ExecuteSimulation()
     t2 = time.time()

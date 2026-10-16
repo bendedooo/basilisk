@@ -83,7 +83,7 @@ class BSKDynamicModels:
             SimBase.CreateNewTask(self.taskName, self.processTasksTimeStep), 1000
         )
         SimBase.dynProc.addTask(
-            SimBase.CreateNewTask(self.taskCamera, mc.sec2nano(60)), 999
+            SimBase.CreateNewTask(self.taskCamera, mc.sec2nano(1.0/60)), 999
         )
 
         # Instantiate Dyn modules as objects
@@ -162,22 +162,27 @@ class BSKDynamicModels:
 
         # Camera config
         self.cameraRate = 60
-        self.cameraMod.renderRate = int(mc.sec2nano(self.cameraRate))  # in
+        self.cameraMod.renderRate = int(mc.sec2nano(1 / self.cameraRate))  # in
         self.cameraMRP_CB = [0.0, 0.0, 0.0]  # Arbitrary camera orientation
         self.cameraMod.sigma_CB = self.cameraMRP_CB
         self.cameraMod.cameraPos_B = [0.0, 0.2, 2.2]  # in meters
-        self.cameraRez = [512, 512]  # [1024,1024] # in pixels
+        # Teledyne CIS120 XL geometric camera configuration
+        self.cameraRez = [1328, 1328]  # pixels
+
+        # Sensor dimensions: 1328 pixels * 10 micrometers
         self.cameraSize = [
-            10.0 * 1e-3,
-            self.cameraRez[1] / self.cameraRez[0] * 10.0 * 1e-3,
-        ]  # in m
+            13.28e-3,
+            13.28e-3,
+        ]  # [width, height] in meters
+
         self.cameraMod.resolution = self.cameraRez
-        self.cameraMod.fieldOfView = np.deg2rad(55)
+        self.cameraMod.fieldOfView = np.deg2rad(55.0)  # full FOV
+
         self.cameraMod.parentName = self.scObject.ModelTag
         self.cameraMod.skyBox = "black"
-        self.cameraFocal = (
-            self.cameraSize[1] / 2.0 / np.tan(self.cameraMod.fieldOfView / 2.0)
-        )  # in m
+
+        # Specified physical focal length
+        self.cameraFocal = 127e-3  # meters
 
     def SetCamera2(self):
         # this 2nd camera is setup, but not used in the FSW image processing
