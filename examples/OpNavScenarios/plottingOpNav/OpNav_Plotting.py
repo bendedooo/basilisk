@@ -340,6 +340,14 @@ def nav_percentages(truth, states, covar, valid, string):
     for i in range(len(valid[:,0])):
         if np.abs(valid[i,1] - 1) < 0.01:
             validIdx.append(i)
+
+    # A short smoke test may finish before any valid circle/navigation
+    # measurements are available. Do not divide by zero or crash while
+    # plotting an otherwise completed simulation.
+    if len(validIdx) == 0:
+        print("Warning: nav_percentages skipped because no valid circle measurements were recorded.")
+        return
+
     diffPos = np.full([len(validIdx), 2], np.nan)
     diffVel = np.full([len(validIdx), 2], np.nan)
     covarPos = np.full([len(validIdx), 2], np.nan)
