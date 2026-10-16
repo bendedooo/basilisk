@@ -210,7 +210,7 @@ class BSKDynamicModels:
         self.cameraMod2.blurParam = 3
 
         # Camera config
-        self.cameraMod2.renderRate = int(mc.sec2nano(self.cameraRate))  # in
+        self.cameraMod2.renderRate = int(mc.sec2nano(1.0 / self.cameraRate))  # seconds in nanoseconds
         self.cameraMod2.sigma_CB = [0.0, 0.5, 0.0]
         self.cameraMod2.cameraPos_B = [0.0, 0.2, 2.2]  # in meters
         self.cameraMod2.resolution = self.cameraRez
