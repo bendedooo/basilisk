@@ -346,7 +346,7 @@ class scenario_OpNav(BSKScenario):
 def run(showPlots, simTime=None):
 
     # Instantiate base simulation
-    TheBSKSim = BSKSim(fswRate=0.5, dynRate=0.5)
+    TheBSKSim = BSKSim(fswRate=0.5, dynRate=0.05)
     TheBSKSim.set_DynModel(BSK_OpNavDynamics)
     TheBSKSim.set_FswModel(BSK_OpNavFsw)
 
@@ -365,7 +365,22 @@ def run(showPlots, simTime=None):
     # The following code spawns the Vizard application from python
     # Modes: "None", "-directComm", "-noDisplay"
     #TheScenario.run_vizard("-noDisplay")
+    
+    #TheScenario.run_vizard("-directComm")
+
+    #test
+    # Inspect camera configuration before launching Vizard
+    dyn = TheBSKSim.get_DynModel()
+    print("\n--- CAMERA / VIZARD STARTUP DIAGNOSTICS ---")
+    print("Camera 1 renderRate [ns]:", dyn.cameraMod.renderRate)
+    print("Camera 2 renderRate [ns]:", dyn.cameraMod2.renderRate)
+    print("Vizard noDisplay:", dyn.vizInterface.noDisplay)
+    print("Vizard liveStream:", dyn.vizInterface.liveStream)
+    
+    print("MARKER A: launching Vizard")
     TheScenario.run_vizard("-directComm")
+    print("MARKER B: Vizard launched")
+    #test
 
     # Configure FSW mode
     TheScenario.masterSim.modeRequest = 'prepOpNav'
@@ -384,9 +399,30 @@ def run(showPlots, simTime=None):
     if simTime != None:
         simulationTime = macros.min2nano(simTime)
     else:
-        simulationTime = macros.min2nano(125)
+        simulationTime = macros.min2nano(9)
     TheBSKSim.ConfigureStopTime(simulationTime)
     TheBSKSim.ExecuteSimulation()
+        #test
+    # Inspect camera and Vizard image messages
+    cam = TheBSKSim.get_DynModel().cameraMod
+    viz = TheBSKSim.get_DynModel().vizInterface
+    
+    # Inspect the latest Vizard image message
+    incoming = viz.opnavImageOutMsgs[0].read()
+    
+    print("\n--- VIZARD IMAGE MESSAGE ---")
+    print("valid:", incoming.valid)
+    print("timeTag:", incoming.timeTag)
+    print("imageBufferLength:", incoming.imageBufferLength)
+    
+    # Inspect the latest camera output message
+    outgoing = cam.imageOutMsg.read()
+    
+    print("\n--- CAMERA OUTPUT MESSAGE ---")
+    print("valid:", outgoing.valid)
+    print("timeTag:", outgoing.timeTag)
+    print("imageBufferLength:", outgoing.imageBufferLength)
+    #test
     t2 = time.time()
     print('Finished Execution in ', t2-t1, ' seconds. Post-processing results')
     # Terminate vizard and show plots
