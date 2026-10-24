@@ -54,7 +54,7 @@ from Basilisk.utilities import deprecated, fswSetupRW, macros, orbitalMotion
 bskPath = __path__[0]
 
 try:
-    from Basilisk.fswAlgorithms import houghCircles, limbFinding  # FSW for OpNav
+    from Basilisk.fswAlgorithms import houghCircles, limbFinding, imageFlashDetectionAvg  # FSW for OpNav
 except ImportError:
     print("OpNav Modules Missing, check build options")
 
@@ -110,6 +110,9 @@ class BSKFswModels():
 
         self.imageProcessing = houghCircles.HoughCircles()
         self.imageProcessing.ModelTag = "houghCircles"
+        
+        self.flashDetectionAvg = imageFlashDetectionAvg.ImageFlashDetectionAvg()
+        self.flashDetectionAvg.ModelTag = "imageFlashDetectionAvg"
 
         if centerRadiusCNNIncluded:
             self.opNavCNN = centerRadiusCNN.CenterRadiusCNN()
@@ -194,6 +197,7 @@ class BSKFswModels():
         SimBase.AddModelToTask("imageProcTask", self.imageProcessing, 15)
 
         SimBase.AddModelToTask("opNavAttODTask", self.imageProcessing, 15)
+        SimBase.AddModelToTask("opNavAttODTask", self.flashDetectionAvg, 14)
         SimBase.AddModelToTask("opNavAttODTask", self.pixelLine, 14)
         SimBase.AddModelToTask("opNavAttODTask", self.opNavPoint, 10)
         SimBase.AddModelToTask("opNavAttODTask", self.relativeOD, 9)
@@ -555,6 +559,18 @@ class BSKFswModels():
         self.imageProcessing.dpValue = 1
         self.imageProcessing.saveDir = 'Test'
         self.imageProcessing.houghMaxRadius = 0  # int(512 / 1.25)
+        
+    def SetImageFlashDetectionAvg(self, SimBase):
+        self.flashDetectionAvg.imageInMsg.subscribeTo(
+            SimBase.DynModels.cameraMod.imageOutMsg
+        )
+
+        self.flashDetectionAvg.numFramesToAverage = 5
+        self.flashDetectionAvg.differenceThreshold = 25
+        self.flashDetectionAvg.minimumArea = 2
+        self.flashDetectionAvg.maximumArea = 5000
+        self.flashDetectionAvg.blurSize = 1
+        self.flashDetectionAvg.noiseSF = 2.0
 
     def SetPixelLineConversion(self, SimBase):
         self.pixelLine.circlesInMsg.subscribeTo(self.opnavCirclesMsg)
@@ -671,6 +687,7 @@ class BSKFswModels():
         self.SetRWMotorTorque(SimBase)
         self.SetAttTrackingErrorCam(SimBase)
         self.SetImageProcessing(SimBase)
+        self.SetImageFlashDetectionAvg(SimBase)
         self.SetPixelLineConversion(SimBase)
 
         if centerRadiusCNNIncluded:

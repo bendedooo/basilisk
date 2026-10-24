@@ -163,6 +163,12 @@ class scenario_OpNav(BSKScenario):
         self.circlesRec = FswModel.opnavCirclesMsg.recorder(samplingTime)
         self.masterSim.AddModelToTask(DynModel.taskName, self.scRec)
         self.masterSim.AddModelToTask(DynModel.taskName, self.circlesRec)
+        
+        # Record the new average-frame flash detector separately
+        self.flashCirclesRec = (
+            FswModel.flashDetectionAvg.opnavCirclesOutMsg.recorder(samplingTime)
+        )
+        self.masterSim.AddModelToTask(DynModel.taskName, self.flashCirclesRec)
 
         return
 
@@ -178,6 +184,54 @@ class scenario_OpNav(BSKScenario):
         circleCenters = simHelpers.addTimeColumn(self.circlesRec.times(), self.circlesRec.circlesCenters)
         circleRadii = simHelpers.addTimeColumn(self.circlesRec.times(), self.circlesRec.circlesRadii)
         validCircle = simHelpers.addTimeColumn(self.circlesRec.times(), self.circlesRec.valid)
+        
+        flash_valid = np.asarray(self.flashCirclesRec.valid).astype(bool)
+        flash_centers = np.asarray(self.flashCirclesRec.circlesCenters)
+        
+        flash_time_ns = np.asarray(self.flashCirclesRec.timeTag)
+
+        if np.any(flash_valid):
+            detected_indices = np.flatnonzero(flash_valid)
+            first_idx = detected_indices[0]
+
+            first_time_ns = flash_time_ns[first_idx]
+            first_time_s = first_time_ns / 1e9
+
+        #     print("\n--- FIRST FLASH CANDIDATE ---")
+        #     print(f"Recorder index: {first_idx}")
+        #     print(f"Frame timestamp: {first_time_ns} ns")
+        #     print(f"Simulation time: {first_time_s:.6f} s")
+        #     print(f"Detected center (pixels): {flash_centers[first_idx]}")
+        #     print(f"Total valid detections: {len(detected_indices)}")
+        # else:
+        #     print("\nNo valid flash candidates detected.")
+
+        # print("Average-frame detector valid outputs:", int(flash_valid.sum()))
+
+        # if flash_valid.any():
+        #     print("Detected flash centers [pixels]:")
+        #     print(flash_centers[flash_valid, :2])
+        # else:
+        #     print("No flash candidates reported during this run.")
+        
+        flash_valid = np.asarray(self.flashCirclesRec.valid).astype(bool)
+        flash_times_s = np.asarray(self.flashCirclesRec.timeTag) / 1e9
+        recorder_times_s = np.asarray(self.flashCirclesRec.times()) / 1e9
+        flash_centers = np.asarray(self.flashCirclesRec.circlesCenters)
+
+        detected_indices = np.flatnonzero(flash_valid)
+
+        print("\n--- ALL FLASH CANDIDATES: TIME AND CENTER ---")
+        print(f"Total valid detections: {len(detected_indices)}")
+
+        for idx in detected_indices:
+            center = flash_centers[idx]
+            print(
+                f"recorder time = {recorder_times_s[idx]:.3f} s, "
+                f"frame timeTag = {flash_times_s[idx]:.3f} s, "
+                f"center = ({center[0]:.2f}, {center[1]:.2f}) pixels"
+            )
+        
         if self.filterUse == "bias":
             NUM_STATES = 9
             ## Navigation results
