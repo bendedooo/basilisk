@@ -70,6 +70,8 @@ sys.path.append(path + '/..')
 from BSK_OpNav import BSKSim, BSKScenario
 import BSK_OpNavDynamics, BSK_OpNavFsw
 import numpy as np
+import spiceypy as spice
+from Basilisk.utilities.supportDataTools.dataFetcher import get_path, DataFile
 
 # Import plotting file for your scenario
 sys.path.append(path + '/../plottingOpNav')
@@ -97,21 +99,64 @@ class scenario_OpNav(BSKScenario):
 
     def configure_initial_conditions(self):
         # Configure Dynamics initial conditions
-        oe = orbitalMotion.ClassicElements()
-        oe.a = 18000 * 1E3  # meters
-        oe.e = 0.6
-        oe.i = 10 * macros.D2R
-        oe.Omega = 25. * macros.D2R
-        oe.omega = 190. * macros.D2R
-        oe.f = 80. * macros.D2R  # 90 good
-        mu = self.masterSim.get_DynModel().gravFactory.gravBodies['moon'].mu
+        #oe = orbitalMotion.ClassicElements()
+        #oe.a = 18000 * 1E3  # meters
+        #oe.e = 0.6
+        #oe.i = 10 * macros.D2R
+        #oe.Omega = 25. * macros.D2R
+        #oe.omega = 190. * macros.D2R
+        #oe.f = 80. * macros.D2R  # 90 good
+        #mu = self.masterSim.get_DynModel().gravFactory.gravBodies['moon'].mu
 
-        rN, vN = orbitalMotion.elem2rv(mu, oe)
-        orbitalMotion.rv2elem(mu, rN, vN)
+        #rN, vN = orbitalMotion.elem2rv(mu, oe)
+        #orbitalMotion.rv2elem(mu, rN, vN)
+	
+	# Get spacecraft state from the local SPK trajectory
+        orbit_spk_path = os.path.expanduser("~/Downloads/orbit.bsp")
+
+        spice.furnsh(str(get_path(DataFile.EphemerisData.naif0012)))
+        spice.furnsh(str(get_path(DataFile.EphemerisData.de430)))
+        spice.furnsh(orbit_spk_path)
+
+        spk_ids = sorted(spice.spkobj(orbit_spk_path))
+        if len(spk_ids) != 1:
+            raise RuntimeError(
+                f"Expected one object in {orbit_spk_path}, "
+                f"found {len(spk_ids)}."
+            )
+
+        et = spice.str2et("2030 JUN 23 06:02:00 TDB")
+        state_km, _ = spice.spkezr(
+            str(spk_ids[0]), et, "J2000", "NONE", "MOON"
+        )
+
+        rN = np.asarray(state_km[:3]) * 1000.0
+        vN = np.asarray(state_km[3:]) * 1000.0
+
+
+
+
+
         bias = [0, 0, -2]
         rError= np.array([10000.,10000., -10000])
         vError= np.array([100, -10, 10])
-        MRP= [0,0,0]
+        #MRP= [0,0,0]
+        # Point the camera's +Z axis toward the Moon at the initial epoch
+        z_B_N = -rN / np.linalg.norm(rN)
+
+        ref_N = np.array([0.0, 0.0, 1.0])
+        if abs(np.dot(ref_N, z_B_N)) > 0.95:
+            ref_N = np.array([0.0, 1.0, 0.0])
+
+        x_B_N = np.cross(ref_N, z_B_N)
+        x_B_N /= np.linalg.norm(x_B_N)
+        y_B_N = np.cross(z_B_N, x_B_N)
+
+        C_BN = np.vstack((x_B_N, y_B_N, z_B_N))
+        # Rotate the camera 180 degrees about its viewing axis
+        C_flip = np.diag([-1.0, -1.0, 1.0])
+        C_BN = C_flip @ C_BN
+        MRP = rbk.C2MRP(C_BN).tolist()
         if self.filterUse =="relOD":
             self.masterSim.get_FswModel().relativeOD.stateInit = (rN + rError).tolist() + (vN + vError).tolist()
         if self.filterUse == "bias":

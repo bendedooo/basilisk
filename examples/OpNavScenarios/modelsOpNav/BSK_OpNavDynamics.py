@@ -31,6 +31,10 @@ import math
 import os
 
 import numpy as np
+import spiceypy as spice
+
+from Basilisk.architecture import messaging
+
 from Basilisk import __path__
 from Basilisk.simulation import (
     spacecraft,
@@ -114,12 +118,10 @@ class BSKDynamicModels:
         self.InitAllDynObjects(SimBase)
 
         # Assign initialized modules to tasks
+        SimBase.AddModelToTask(self.taskName, self.gravFactory.spiceObject, 203)
+        #SimBase.AddModelToTask(self.taskName, self.targetObject, 202)
         SimBase.AddModelToTask(self.taskName, self.scObject, 201)
-        #test
-        SimBase.AddModelToTask(self.taskName, self.targetObject, 202)
-        #test
         SimBase.AddModelToTask(self.taskName, self.SimpleNavObject, 109)
-        SimBase.AddModelToTask(self.taskName, self.gravFactory.spiceObject, 200)
         SimBase.AddModelToTask(self.taskName, self.ephemObject, 199)
         SimBase.AddModelToTask(self.taskName, self.CSSConstellationObject, 299)
         SimBase.AddModelToTask(self.taskName, self.eclipseObject, 204)
@@ -173,7 +175,7 @@ class BSKDynamicModels:
             self.cameraRez[1] / self.cameraRez[0] * 10.0 * 1e-3,
         ]  # in m
         self.cameraMod.resolution = self.cameraRez
-        self.cameraMod.fieldOfView = np.deg2rad(55)
+        self.cameraMod.fieldOfView = np.deg2rad(10)
         self.cameraMod.parentName = self.scObject.ModelTag
         self.cameraMod.skyBox = "black"
         self.cameraFocal = (
@@ -217,18 +219,19 @@ class BSKDynamicModels:
         self.vizInterface = vizSupport.enableUnityVisualization(
             SimBase,
             self.taskName,
-            # [self.scObject, self],
+            #[self.scObject, self],
             [self.scObject, self.targetObject], # test
             saveFile=__file__,
+            #rwEffectorList=[self.rwStateEffector],
             rwEffectorList=[self.rwStateEffector, None],
         )
         #test
-        vizSupport.createCustomModel(
-            self.vizInterface,
-            modelPath="CUBE",
-            simBodiesToModify=["opnavTarget"],
-            scale=[5000000.0, 5000000.0, 5000000.0],
-        )
+        #vizSupport.createCustomModel(
+            #self.vizInterface,
+            #modelPath="CUBE",
+            #simBodiesToModify=["opnavTarget"],
+            #scale=[5000000.0, 5000000.0, 5000000.0],
+        #)
         #test
         
         # setup OpNav behavior by connecting camera module config message
@@ -289,7 +292,7 @@ class BSKDynamicModels:
         Specify what gravitational bodies to include in the simulation
         """
 
-        timeInitString = "2019 DECEMBER 12 18:00:00.0"
+        timeInitString = "2030 JUNE 23 06:02:00.0 TDB"
         gravBodies = self.gravFactory.createBodies(
             ["sun", "earth", "moon", "jupiter barycenter"]
         )
@@ -318,6 +321,29 @@ class BSKDynamicModels:
         pyswice.furnsh_c(str(naif0012_path))  # leap second file
         pyswice.furnsh_c(str(de403masses_path))  # solar system masses
         pyswice.furnsh_c(str(pck00010_path))  # generic Planetary Constants Kernel
+        
+        orbit_spk_path = os.path.expanduser("~/Downloads/orbit.bsp")
+
+        spk_ids = sorted(spice.spkobj(orbit_spk_path))
+        if len(spk_ids) != 1:
+            raise RuntimeError(
+                f"Expected one object in {orbit_spk_path}, "
+                f"found {len(spk_ids)}."
+            )
+
+        spacecraft_id = str(spk_ids[0])
+
+        self.gravFactory.spiceObject.addSpacecraftNames(
+            messaging.StringVector([spacecraft_id])
+        )
+        self.gravFactory.spiceObject.loadSpiceKernel(
+            orbit_spk_path, ""
+        )
+
+        self.scObject.transRefInMsg.subscribeTo(
+        self.gravFactory.spiceObject.transRefStateOutMsgs[0]
+        )
+
 
     def SetEclipseObject(self):
         self.eclipseObject.sunInMsg.subscribeTo(
