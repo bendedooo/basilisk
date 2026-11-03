@@ -95,6 +95,8 @@ class scenario_OpNav(BSKScenario):
         self.circlesRec = None
         self.scRec = None
         self.filtRec = None
+        self.flashCirclesRec = None
+        self.impactFlashCirclesRec = None
 
 
     def configure_initial_conditions(self):
@@ -110,8 +112,7 @@ class scenario_OpNav(BSKScenario):
 
         #rN, vN = orbitalMotion.elem2rv(mu, oe)
         #orbitalMotion.rv2elem(mu, rN, vN)
-	
-	# Get spacecraft state from the local SPK trajectory
+        # Get spacecraft state from the local SPK trajectory
         orbit_spk_path = os.path.expanduser("~/Downloads/orbit.bsp")
 
         spice.furnsh(str(get_path(DataFile.EphemerisData.naif0012)))
@@ -209,11 +210,24 @@ class scenario_OpNav(BSKScenario):
         self.masterSim.AddModelToTask(DynModel.taskName, self.scRec)
         self.masterSim.AddModelToTask(DynModel.taskName, self.circlesRec)
         
-        # Record the new average-frame flash detector separately
+        # Record baseline flash detector
         self.flashCirclesRec = (
             FswModel.flashDetectionAvg.opnavCirclesOutMsg.recorder(samplingTime)
         )
-        self.masterSim.AddModelToTask(DynModel.taskName, self.flashCirclesRec)
+
+        # Record new impact flash detector
+        self.impactFlashCirclesRec = (
+            FswModel.impactFlashDetection.opnavCirclesOutMsg.recorder(samplingTime)
+        )
+
+        # Add both recorders to the FSW detection task
+        self.masterSim.AddModelToTask(
+            "opNavAttODTask", self.flashCirclesRec, 1
+        )
+
+        self.masterSim.AddModelToTask(
+            "opNavAttODTask", self.impactFlashCirclesRec, 1
+        )
 
         return
 
@@ -221,6 +235,12 @@ class scenario_OpNav(BSKScenario):
         ## Spacecraft true states
         position_N = simHelpers.addTimeColumn(self.scRec.times(), self.scRec.r_BN_N)
         velocity_N = simHelpers.addTimeColumn(self.scRec.times(), self.scRec.v_BN_N)
+        distances_km = np.linalg.norm(position_N[:, 1:4], axis=1) / 1e3
+
+        print(f"\nInitial Moon distance: {distances_km[0]:,.3f} km")
+        print(f"Final Moon distance:   {distances_km[-1]:,.3f} km")
+        print(f"Minimum Moon distance: {distances_km.min():,.3f} km")
+        print(f"Maximum Moon distance: {distances_km.max():,.3f} km")
 
         ## Attitude
         sigma_BN = simHelpers.addTimeColumn(self.scRec.times(), self.scRec.sigma_BN)
@@ -263,6 +283,53 @@ class scenario_OpNav(BSKScenario):
         flash_times_s = np.asarray(self.flashCirclesRec.timeTag) / 1e9
         recorder_times_s = np.asarray(self.flashCirclesRec.times()) / 1e9
         flash_centers = np.asarray(self.flashCirclesRec.circlesCenters)
+
+                # ============================================================
+        # Export baseline and new detector results
+        # ============================================================
+
+        def export_detector_results(recorder, filename):
+
+            times = np.asarray(recorder.times()) / 1e9
+            valid = np.asarray(recorder.valid)
+
+            centers = np.asarray(recorder.circlesCenters)
+            radii = np.asarray(recorder.circlesRadii)
+
+            data = np.column_stack((
+                times,
+                valid,
+                centers[:, 0],
+                centers[:, 1],
+                radii[:, 0]
+            ))
+
+            np.savetxt(
+                filename,
+                data,
+                delimiter=",",
+                header="time_s,valid,x,y,radius",
+                comments=""
+            )
+
+            print("\nFile:", filename)
+            print("Total frames:", len(valid))
+            print("Valid detections:", np.count_nonzero(valid))
+
+
+        print("\n========== FLASH DETECTION COMPARISON ==========")
+
+        export_detector_results(
+            self.flashCirclesRec,
+            "impact_flash_baseline.csv"
+        )
+
+        export_detector_results(
+            self.impactFlashCirclesRec,
+            "impact_flash_new.csv"
+        )
+
+        print("================================================")
 
         detected_indices = np.flatnonzero(flash_valid)
 
@@ -359,7 +426,8 @@ class scenario_OpNav(BSKScenario):
                 stateError[j, 1:] = np.full(NUM_STATES, np.nan)
                 switchIdx += 1
         for i in range(len(circleCenters[:,0])):
-            if circleCenters[i,1:].any() > 1E-8 or circleCenters[i,1:].any() < -1E-8:
+            #if circleCenters[i,1:].any() > 1E-8 or circleCenters[i,1:].any() < -1E-8:
+            if np.any(np.abs(circleCenters[i, 1:]) > 1E-8):
                 trueR_C[i, 1:] = np.dot(np.dot(dcm_CB, rbk.MRP2C(sigma_BN[i + switchIdx, 1:4])),
                                             position_N[i + switchIdx, 1:4])
                 trueRhat_C[i,1:] = np.dot(np.dot(dcm_CB, rbk.MRP2C(sigma_BN[i +switchIdx, 1:4])) ,position_N[i +switchIdx, 1:4])/np.linalg.norm(position_N[i +switchIdx, 1:4])
@@ -441,7 +509,6 @@ class scenario_OpNav(BSKScenario):
 
         return figureList
 
-
 def run(showPlots, simTime=None):
 
     # Instantiate base simulation
@@ -456,78 +523,78 @@ def run(showPlots, simTime=None):
     TheScenario.configure_initial_conditions()
 
     TheBSKSim.get_DynModel().cameraMod.saveImages = 1
-    # liveStream is used for viewing the spacecraft as it navigates, noDisplay is for headless camera simulation
-    #TheBSKSim.get_DynModel().vizInterface.noDisplay = True
+    # liveStream is used for viewing the spacecraft as it navigates
     TheBSKSim.get_DynModel().vizInterface.noDisplay = False
     TheBSKSim.get_DynModel().vizInterface.liveStream = True
 
-    # The following code spawns the Vizard application from python
-    # Modes: "None", "-directComm", "-noDisplay"
-    #TheScenario.run_vizard("-noDisplay")
-    
-    #TheScenario.run_vizard("-directComm")
-
-    #test
-    # Inspect camera configuration before launching Vizard
+    # Launch Vizard
     dyn = TheBSKSim.get_DynModel()
     print("\n--- CAMERA / VIZARD STARTUP DIAGNOSTICS ---")
     print("Camera 1 renderRate [ns]:", dyn.cameraMod.renderRate)
     print("Camera 2 renderRate [ns]:", dyn.cameraMod2.renderRate)
     print("Vizard noDisplay:", dyn.vizInterface.noDisplay)
     print("Vizard liveStream:", dyn.vizInterface.liveStream)
-    
+
     print("MARKER A: launching Vizard")
     TheScenario.run_vizard("-directComm")
     print("MARKER B: Vizard launched")
-    #test
 
     # Configure FSW mode
     TheScenario.masterSim.modeRequest = 'prepOpNav'
+
     # Initialize simulation
     TheBSKSim.InitializeSimulation()
-    # Configure run time and execute simulation
+
+    # Initial OpNav preparation phase
     simulationTime = macros.min2nano(3.)
     TheBSKSim.ConfigureStopTime(simulationTime)
+
     print('Starting Execution')
     t1 = time.time()
+
     TheBSKSim.ExecuteSimulation()
+
+    # Switch to relative orbit determination
     if TheScenario.filterUse == "bias":
         TheScenario.masterSim.modeRequest = 'OpNavAttODB'
+
     if TheScenario.filterUse == "relOD":
         TheScenario.masterSim.modeRequest = 'OpNavAttOD'
+
     if simTime != None:
         simulationTime = macros.min2nano(simTime)
     else:
-        simulationTime = macros.min2nano(9)
+        simulationTime = macros.min2nano(5)
+
     TheBSKSim.ConfigureStopTime(simulationTime)
     TheBSKSim.ExecuteSimulation()
-        #test
+
     # Inspect camera and Vizard image messages
     cam = TheBSKSim.get_DynModel().cameraMod
     viz = TheBSKSim.get_DynModel().vizInterface
-    
-    # Inspect the latest Vizard image message
+
     incoming = viz.opnavImageOutMsgs[0].read()
-    
+
     print("\n--- VIZARD IMAGE MESSAGE ---")
     print("valid:", incoming.valid)
     print("timeTag:", incoming.timeTag)
     print("imageBufferLength:", incoming.imageBufferLength)
-    
-    # Inspect the latest camera output message
+
     outgoing = cam.imageOutMsg.read()
-    
+
     print("\n--- CAMERA OUTPUT MESSAGE ---")
     print("valid:", outgoing.valid)
     print("timeTag:", outgoing.timeTag)
     print("imageBufferLength:", outgoing.imageBufferLength)
-    #test
-    t2 = time.time()
-    print('Finished Execution in ', t2-t1, ' seconds. Post-processing results')
-    # Terminate vizard and show plots
-    figureList = TheScenario.end_scenario()
-    return figureList
 
+    t2 = time.time()
+    print('Finished Execution in ', t2-t1,
+          ' seconds. Post-processing results')
+
+    # Terminate Vizard and show plots
+    figureList = TheScenario.end_scenario()
+
+    return figureList
 
 if __name__ == "__main__":
     run(True)
