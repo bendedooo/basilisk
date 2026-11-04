@@ -170,6 +170,11 @@ class BSKFswModels():
         SimBase.fswProc.addTask(SimBase.CreateNewTask("attODFaultDet", self.processTasksTimeStep), 9)
         SimBase.fswProc.addTask(SimBase.CreateNewTask("cnnFaultDet", self.processTasksTimeStep), 9)
 
+        # Flash detectors run at the camera rate (0.1 s), independent of fswRate,
+        # so that every camera image is processed (a 0.2 s flash spans 1-2 images)
+        self.flashTaskTimeStep = macros.sec2nano(0.1)
+        SimBase.fswProc.addTask(SimBase.CreateNewTask("flashDetectionTask", self.flashTaskTimeStep), 9)
+
         SimBase.AddModelToTask("opNavPointTask", self.imageProcessing, 15)
         SimBase.AddModelToTask("opNavPointTask", self.pixelLine, 12)
         SimBase.AddModelToTask("opNavPointTask", self.opNavPoint, 9)
@@ -205,29 +210,9 @@ class BSKFswModels():
         SimBase.AddModelToTask("imageProcTask", self.imageProcessing, 15)
 
         SimBase.AddModelToTask("opNavAttODTask", self.imageProcessing, 15)
-        SimBase.AddModelToTask("opNavAttODTask", self.flashDetectionAvg, 14)
-        SimBase.AddModelToTask("opNavAttODTask", self.impactFlashDetection, 13)
-        
-        # Record baseline detector output
-        self.flashDetectionAvgRecorder = (
-            self.flashDetectionAvg.opnavCirclesOutMsg.recorder(
-                self.processTasksTimeStep
-            )
-        )
-
-        # Record new detector output
-        self.impactFlashDetectionRecorder = (
-            self.impactFlashDetection.opnavCirclesOutMsg.recorder(
-                self.processTasksTimeStep
-            )
-        )
-
-        # Execute recorders after the detection modules
-        SimBase.AddModelToTask(
-            "opNavAttODTask",
-            self.flashDetectionAvgRecorder,
-            1
-        )
+        # Flash detectors: own task at the camera rate (see flashDetectionTask)
+        SimBase.AddModelToTask("flashDetectionTask", self.flashDetectionAvg, 14)
+        SimBase.AddModelToTask("flashDetectionTask", self.impactFlashDetection, 13)
 
         SimBase.AddModelToTask("opNavAttODTask", self.pixelLine, 12)
         SimBase.AddModelToTask("opNavAttODTask", self.opNavPoint, 10)
@@ -397,6 +382,7 @@ class BSKFswModels():
                 self.fswProc.disableAllTasks(),
                 self.FSWModels.zeroGateWayMsgs(),
                 self.enableTask("opNavAttODTask"),
+                self.enableTask("flashDetectionTask"),
                 self.enableTask("mrpFeedbackRWsTask"),
             ),
         )
@@ -612,7 +598,7 @@ class BSKFswModels():
         self.impactFlashDetection.thresholdSigma = 5.0
         self.impactFlashDetection.highThresholdRatio = 1.0
         self.impactFlashDetection.lowThresholdRatio = 0.5
-        self.impactFlashDetection.warmupFrames = 10
+        self.impactFlashDetection.warmupFrames = 30
 
         self.impactFlashDetection.minimumArea = 2
         self.impactFlashDetection.maximumArea = 5000

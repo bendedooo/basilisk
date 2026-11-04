@@ -212,21 +212,21 @@ class scenario_OpNav(BSKScenario):
         
         # Record baseline flash detector
         self.flashCirclesRec = (
-            FswModel.flashDetectionAvg.opnavCirclesOutMsg.recorder(samplingTime)
+            FswModel.flashDetectionAvg.opnavCirclesOutMsg.recorder()
         )
 
         # Record new impact flash detector
         self.impactFlashCirclesRec = (
-            FswModel.impactFlashDetection.opnavCirclesOutMsg.recorder(samplingTime)
+            FswModel.impactFlashDetection.opnavCirclesOutMsg.recorder()
         )
 
         # Add both recorders to the FSW detection task
         self.masterSim.AddModelToTask(
-            "opNavAttODTask", self.flashCirclesRec, 1
+            "flashDetectionTask", self.flashCirclesRec, 1
         )
 
         self.masterSim.AddModelToTask(
-            "opNavAttODTask", self.impactFlashCirclesRec, 1
+            "flashDetectionTask", self.impactFlashCirclesRec, 1
         )
 
         return
