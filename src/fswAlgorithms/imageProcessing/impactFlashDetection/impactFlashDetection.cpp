@@ -14,20 +14,73 @@
 #include <opencv2/imgcodecs.hpp>
 
 
+namespace {
+
+// Same as numpy.percentile(values, p) (linear interpolation).
+double percentileOf(const cv::Mat& image, double p)
+{
+    std::vector<float> values;
+    values.reserve(image.total());
+
+    if (image.isContinuous()) {
+        const float* data = image.ptr<float>(0);
+        values.assign(data, data + image.total());
+    } else {
+        for (int r = 0; r < image.rows; r++) {
+            const float* row = image.ptr<float>(r);
+            values.insert(values.end(), row, row + image.cols);
+        }
+    }
+
+    if (values.empty()) {
+        return 0.0;
+    }
+
+    double position = (p / 100.0) * (values.size() - 1);
+    size_t lower = static_cast<size_t>(std::floor(position));
+    size_t upper = std::min(lower + 1, values.size() - 1);
+    double fraction = position - lower;
+
+    std::nth_element(values.begin(), values.begin() + lower, values.end());
+    double lowerValue = values[lower];
+
+    std::nth_element(values.begin(), values.begin() + upper, values.end());
+    double upperValue = values[upper];
+
+    return lowerValue + fraction * (upperValue - lowerValue);
+}
+
+}  // namespace
+
+
 ImpactFlashDetection::ImpactFlashDetection()
 {
     this->backgroundAlpha = 0.35;
     this->thresholdSigma = 5.0;
     this->highThresholdRatio = 1.0;
     this->lowThresholdRatio = 0.5;
-    this->warmupFrames = 10;
+    this->warmupFrames = 30;             // frames used to learn background AND noise
 
     this->minimumArea = 2;
     this->maximumArea = 5000;
     this->blurSize = 1;
     this->noiseSF = 2.0;
 
+    // Adaptive per-pixel threshold (replaces mu + 5 sigma)
+    this->noiseBeta = 0.05;              // memory of the per-pixel noise variance (~1/beta frames)
+    this->kHigh = 6.0;                   // seed threshold, in units of local noise sigma
+    this->kLow = 3.0;                    // region-growing threshold (hysteresis), in sigma
+    this->sigmaMin = 0.5;                // gray levels; uint8 quantization floor
+    this->varianceWindow = 5;            // spatial smoothing of the variance map (px)
+    this->sigmaDilate = 1;               // local max of sigma over (2n+1)^2 px (moving edges)
+    this->limbMargin = 4;                // reject candidates whose peak is this close to the limb
+    this->discFraction = 0.05;           // disc = background > fraction * 99.5th percentile
+
     this->warmupCounter = 0;
+    this->backgroundFreezeUntilNanos = 0;
+    this->candidateActive = false;
+    this->lastImageTimeTag = 0;
+    this->haveLastImage = false;
 
 }
 
@@ -38,8 +91,13 @@ ImpactFlashDetection::~ImpactFlashDetection() = default;
 void ImpactFlashDetection::Reset(uint64_t CurrentSimNanos)
 {
     this->backgroundGray.release();
+    this->noiseVariance.release();
 
     this->warmupCounter = 0;
+    this->backgroundFreezeUntilNanos = 0;
+    this->candidateActive = false;
+    this->lastImageTimeTag = 0;
+    this->haveLastImage = false;
 
     if (!this->imageInMsg.isLinked()) {
         bskLogger.bskError(
@@ -72,6 +130,26 @@ void ImpactFlashDetection::UpdateState(uint64_t CurrentSimNanos)
         );
         return;
     }
+
+
+    // ------------------------------------------------------------
+    // 0. Process each camera image only once
+    // ------------------------------------------------------------
+    // If this module runs faster than the camera, the same image is
+    // read again. Processing it twice would give a ~0 difference and
+    // shrink the learned noise, which later causes false detections.
+
+    if (this->haveLastImage &&
+        input.timeTag == this->lastImageTimeTag) {
+
+        this->opnavCirclesOutMsg.write(
+            &output, this->moduleID, CurrentSimNanos
+        );
+        return;
+    }
+
+    this->lastImageTimeTag = input.timeTag;
+    this->haveLastImage = true;
 
 
     // ------------------------------------------------------------
@@ -145,7 +223,7 @@ void ImpactFlashDetection::UpdateState(uint64_t CurrentSimNanos)
 
 
     // ------------------------------------------------------------
-    // 5. Background warm-up
+    // 5. Warm-up: learn the background AND the per-pixel noise
     // ------------------------------------------------------------
 
     double alpha = std::max(
@@ -153,9 +231,38 @@ void ImpactFlashDetection::UpdateState(uint64_t CurrentSimNanos)
         std::min(1.0, this->backgroundAlpha)
     );
 
+    double beta = std::max(
+        0.0,
+        std::min(1.0, this->noiseBeta)
+    );
+
     if (this->warmupCounter < this->warmupFrames) {
 
-        this->backgroundGray = grayFloat.clone();
+        if (this->warmupCounter == 0 ||
+            this->noiseVariance.empty() ||
+            this->noiseVariance.size() != grayFloat.size()) {
+
+            this->backgroundGray = grayFloat.clone();
+            this->noiseVariance = cv::Mat::zeros(
+                grayFloat.size(), CV_32F
+            );
+
+        } else {
+
+            cv::Mat warmupDifference = grayFloat - this->backgroundGray;
+            cv::Mat warmupSquared = warmupDifference.mul(warmupDifference);
+
+            // Running mean of the squared difference
+            this->noiseVariance +=
+                (warmupSquared - this->noiseVariance)
+                * (1.0 / this->warmupCounter);
+
+            cv::accumulateWeighted(
+                grayFloat,
+                this->backgroundGray,
+                alpha
+            );
+        }
 
         this->warmupCounter++;
 
@@ -169,10 +276,8 @@ void ImpactFlashDetection::UpdateState(uint64_t CurrentSimNanos)
     }
 
 
-
-
     // ------------------------------------------------------------
-    // 6. Calculate positive difference image
+    // 6. Signed difference image
     // ------------------------------------------------------------
 
     cv::Mat differenceFloat;
@@ -183,62 +288,79 @@ void ImpactFlashDetection::UpdateState(uint64_t CurrentSimNanos)
         differenceFloat
     );
 
-    // Keep only positive intensity changes.
-    cv::Mat positiveDifference;
 
-    cv::threshold(
-        differenceFloat,
-        positiveDifference,
-        0.0,
-        0.0,
-        cv::THRESH_TOZERO
+    // ------------------------------------------------------------
+    // 7. Per-pixel adaptive threshold from the learned noise
+    // ------------------------------------------------------------
+
+    int window = std::max(1, this->varianceWindow);
+
+    cv::Mat smoothedVariance;
+
+    cv::blur(
+        this->noiseVariance,
+        smoothedVariance,
+        cv::Size(window, window)
+    );
+
+    cv::Mat localSigma;
+
+    cv::max(
+        smoothedVariance,
+        this->sigmaMin * this->sigmaMin,
+        smoothedVariance
+    );
+
+    cv::sqrt(smoothedVariance, localSigma);
+
+    if (this->sigmaDilate > 0) {
+
+        int size = 2 * this->sigmaDilate + 1;
+
+        cv::dilate(
+            localSigma,
+            localSigma,
+            cv::Mat::ones(size, size, CV_8U)
+        );
+    }
+
+    cv::Mat snr;
+
+    cv::divide(differenceFloat, localSigma, snr);
+
+    // Moon disc from the background, shrunk by limbMargin (thesis 3.2.2)
+    double discLevel =
+        this->discFraction * percentileOf(this->backgroundGray, 99.5);
+
+    cv::Mat discMask;
+
+    cv::compare(
+        this->backgroundGray,
+        discLevel,
+        discMask,
+        cv::CMP_GT
+    );
+
+    cv::Mat discInside;
+
+    int erodeSize = 2 * std::max(0, this->limbMargin) + 1;
+
+    cv::erode(
+        discMask,
+        discInside,
+        cv::Mat::ones(erodeSize, erodeSize, CV_8U)
     );
 
 
     // ------------------------------------------------------------
-    // 7. Calculate adaptive threshold
+    // 8. High and low threshold masks (in units of local sigma)
     // ------------------------------------------------------------
 
-cv::Scalar imageMean;
-cv::Scalar imageStdDev;
+    cv::Mat highMask;
+    cv::Mat lowMask;
 
-cv::meanStdDev(
-    positiveDifference,
-    imageMean,
-    imageStdDev
-);
-
-double adaptiveThreshold =
-    imageMean[0] +
-    this->thresholdSigma * imageStdDev[0];
-
-    // ------------------------------------------------------------
-    // 8. Generate binary candidate mask
-    // ------------------------------------------------------------
-
-
-double highThreshold =
-    adaptiveThreshold * this->highThresholdRatio;
-
-double lowThreshold =
-    adaptiveThreshold * this->lowThresholdRatio;
-
-cv::Mat highMask;
-cv::Mat lowMask;
-
-cv::compare(
-    positiveDifference,
-    highThreshold,
-    highMask,
-    cv::CMP_GT
-);
-
-cv::compare(
-    positiveDifference,
-    lowThreshold,
-    lowMask,
-    cv::CMP_GT
-);
+    cv::compare(snr, this->kHigh, highMask, cv::CMP_GT);
+    cv::compare(snr, this->kLow, lowMask, cv::CMP_GT);
 
 
 // ------------------------------------------------------------
@@ -269,11 +391,7 @@ struct Candidate {
 
 std::vector<Candidate> candidates;
 
-// Mask of accepted flash regions.
-// This will also be used to prevent flash pixels
-// from contaminating the background update.
-cv::Mat candidateMask =
-    cv::Mat::zeros(lowMask.size(), CV_8UC1);
+
 
 
 for (int label = 1; label < componentCount; label++) {
@@ -312,6 +430,22 @@ for (int label = 1; label < componentCount; label++) {
         continue;
     }
 
+    // Thesis 3.2.2: the strongest pixel must lie inside the disc
+    cv::Point peakLocation;
+
+    cv::minMaxLoc(
+        snr,
+        nullptr,
+        nullptr,
+        nullptr,
+        &peakLocation,
+        componentMask
+    );
+
+    if (discInside.at<unsigned char>(peakLocation) == 0) {
+        continue;
+    }
+
     Candidate candidate;
 
     candidate.label = label;
@@ -329,15 +463,14 @@ for (int label = 1; label < componentCount; label++) {
 
     candidates.push_back(candidate);
 
-    // Mark accepted flash pixels.
-    candidateMask.setTo(255, componentMask);
+
 }
 
     // ------------------------------------------------------------
     // 10. Sort candidates by area
     // ------------------------------------------------------------
 
-    std::sort(
+    std::stable_sort(
         candidates.begin(),
         candidates.end(),
         [](const Candidate& a, const Candidate& b) {
@@ -389,23 +522,37 @@ for (int label = 1; label < componentCount; label++) {
 
 
 // ------------------------------------------------------------
-// 12. Update background excluding detected flash pixels
+// 12. Temporarily freeze background after candidate detection
 // ------------------------------------------------------------
 
-cv::Mat backgroundUpdateMask;
+bool candidateDetected = !candidates.empty();
 
-cv::bitwise_not(
-    candidateMask,
-    backgroundUpdateMask
-);
+// Start the freeze only when a candidate first appears.
+// Do not extend it on every consecutive detection.
+if (candidateDetected && !this->candidateActive) {
+    this->backgroundFreezeUntilNanos =
+        CurrentSimNanos + 198000000ULL;
+}
 
-cv::accumulateWeighted(
-    grayFloat,
-    this->backgroundGray,
-    alpha,
-    backgroundUpdateMask
-);
+this->candidateActive = candidateDetected;
 
+// Resume normal background updating after the freeze.
+if (CurrentSimNanos >= this->backgroundFreezeUntilNanos) {
+    cv::accumulateWeighted(
+        grayFloat,
+        this->backgroundGray,
+        alpha
+    );
+
+    cv::Mat differenceSquared =
+        differenceFloat.mul(differenceFloat);
+
+    cv::accumulateWeighted(
+        differenceSquared,
+        this->noiseVariance,
+        beta
+    );
+}
 
     // ------------------------------------------------------------
     // 13. Publish output
