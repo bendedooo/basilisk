@@ -77,6 +77,10 @@ from Basilisk.utilities.supportDataTools.dataFetcher import get_path, DataFile
 sys.path.append(path + '/../plottingOpNav')
 import OpNav_Plotting as BSK_plt
 
+# Live lunar impact flash geolocation (method B running, method A on truth as cross-check)
+sys.path.append(path)
+from lif_geolocator import LifGeolocator
+
 # Create your own scenario child class
 class scenario_OpNav(BSKScenario):
     """Main Simulation Class"""
@@ -97,6 +101,7 @@ class scenario_OpNav(BSKScenario):
         self.filtRec = None
         self.flashCirclesRec = None
         self.impactFlashCirclesRec = None
+        self.lifGeo = None
 
 
     def configure_initial_conditions(self):
@@ -229,6 +234,18 @@ class scenario_OpNav(BSKScenario):
             "flashDetectionTask", self.impactFlashCirclesRec, 1
         )
 
+        # Live LIF geolocation: runs in the flash task right after impactFlashDetection
+        # (priority 13), so priority 12. Prints lat/lon/h of every detected flash.
+        spice = DynModel.gravFactory.spiceObject
+        self.lifGeo = LifGeolocator()
+        self.lifGeo.flashInMsg.subscribeTo(FswModel.impactFlashDetection.opnavCirclesOutMsg)
+        self.lifGeo.moonCircleInMsg.subscribeTo(FswModel.opnavCirclesMsg)      # Hough circle of the Moon
+        self.lifGeo.cameraConfigInMsg.subscribeTo(DynModel.cameraMod.cameraConfigOutMsg)
+        self.lifGeo.attNavInMsg.subscribeTo(DynModel.SimpleNavObject.attOutMsg)     # method B attitude
+        self.lifGeo.scTruthInMsg.subscribeTo(DynModel.scObject.scStateOutMsg)       # method A truth
+        self.lifGeo.moonStateInMsg.subscribeTo(spice.planetStateOutMsgs[DynModel.moon])
+        self.masterSim.AddModelToTask("flashDetectionTask", self.lifGeo, 12)
+
         return
 
     def pull_outputs(self, showPlots):
@@ -241,6 +258,11 @@ class scenario_OpNav(BSKScenario):
         print(f"Final Moon distance:   {distances_km[-1]:,.3f} km")
         print(f"Minimum Moon distance: {distances_km.min():,.3f} km")
         print(f"Maximum Moon distance: {distances_km.max():,.3f} km")
+
+        # ---- Live LIF geolocation results ----
+        self.lifGeo.write_csv("impact_flash_locations.csv")
+        print(f"\nLIF geolocation: {len(self.lifGeo.rows)} flash candidates located, "
+              f"saved to impact_flash_locations.csv")
 
         ## Attitude
         sigma_BN = simHelpers.addTimeColumn(self.scRec.times(), self.scRec.sigma_BN)
