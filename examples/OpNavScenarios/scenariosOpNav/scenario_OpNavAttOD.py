@@ -216,9 +216,11 @@ class scenario_OpNav(BSKScenario):
         self.masterSim.AddModelToTask(DynModel.taskName, self.circlesRec)
         
         # Record baseline flash detector
-        self.flashCirclesRec = (
-            FswModel.flashDetectionAvg.opnavCirclesOutMsg.recorder()
-        )
+        self.flashCirclesRec = None
+        if USE_BASELINE_DETECTOR:
+            self.flashCirclesRec = (
+                FswModel.flashDetectionAvg.opnavCirclesOutMsg.recorder()
+            )
 
         # Record new impact flash detector
         self.impactFlashCirclesRec = (
@@ -226,9 +228,10 @@ class scenario_OpNav(BSKScenario):
         )
 
         # Add both recorders to the FSW detection task
-        self.masterSim.AddModelToTask(
-            "flashDetectionTask", self.flashCirclesRec, 1
-        )
+        if USE_BASELINE_DETECTOR:
+            self.masterSim.AddModelToTask(
+                "flashDetectionTask", self.flashCirclesRec, 1
+            )
 
         self.masterSim.AddModelToTask(
             "flashDetectionTask", self.impactFlashCirclesRec, 1
@@ -272,10 +275,10 @@ class scenario_OpNav(BSKScenario):
         circleRadii = simHelpers.addTimeColumn(self.circlesRec.times(), self.circlesRec.circlesRadii)
         validCircle = simHelpers.addTimeColumn(self.circlesRec.times(), self.circlesRec.valid)
         
-        flash_valid = np.asarray(self.flashCirclesRec.valid).astype(bool)
-        flash_centers = np.asarray(self.flashCirclesRec.circlesCenters)
+        flash_valid = np.asarray(self.impactFlashCirclesRec.valid).astype(bool)
+        flash_centers = np.asarray(self.impactFlashCirclesRec.circlesCenters)
         
-        flash_time_ns = np.asarray(self.flashCirclesRec.timeTag)
+        flash_time_ns = np.asarray(self.impactFlashCirclesRec.timeTag)
 
         if np.any(flash_valid):
             detected_indices = np.flatnonzero(flash_valid)
@@ -301,10 +304,10 @@ class scenario_OpNav(BSKScenario):
         # else:
         #     print("No flash candidates reported during this run.")
         
-        flash_valid = np.asarray(self.flashCirclesRec.valid).astype(bool)
-        flash_times_s = np.asarray(self.flashCirclesRec.timeTag) / 1e9
-        recorder_times_s = np.asarray(self.flashCirclesRec.times()) / 1e9
-        flash_centers = np.asarray(self.flashCirclesRec.circlesCenters)
+        flash_valid = np.asarray(self.impactFlashCirclesRec.valid).astype(bool)
+        flash_times_s = np.asarray(self.impactFlashCirclesRec.timeTag) / 1e9
+        recorder_times_s = np.asarray(self.impactFlashCirclesRec.times()) / 1e9
+        flash_centers = np.asarray(self.impactFlashCirclesRec.circlesCenters)
 
                 # ============================================================
         # Export baseline and new detector results
@@ -341,10 +344,11 @@ class scenario_OpNav(BSKScenario):
 
         print("\n========== FLASH DETECTION COMPARISON ==========")
 
-        export_detector_results(
-            self.flashCirclesRec,
-            "impact_flash_baseline.csv"
-        )
+        if USE_BASELINE_DETECTOR:
+            export_detector_results(
+                self.flashCirclesRec,
+                "impact_flash_baseline.csv"
+            )
 
         export_detector_results(
             self.impactFlashCirclesRec,
@@ -531,10 +535,19 @@ class scenario_OpNav(BSKScenario):
 
         return figureList
 
+# Old averaging flash detector (imageFlashDetectionAvg): off for a clean output
+USE_BASELINE_DETECTOR = False
+
+
 def run(showPlots, simTime=None):
 
     # Instantiate base simulation
-    TheBSKSim = BSKSim(fswRate=0.5, dynRate=0.05)
+    CAMERA_FPS = 30                                     # NELIOTA uses 30 fps
+    FRAME_S = round(1e9 / CAMERA_FPS) * 1e-9            # one camera frame, whole ns
+    # Dynamics, camera and flight software all step once per camera frame
+    # (houghCircles only uses an image taken at the current FSW time)
+    TheBSKSim = BSKSim(fswRate=FRAME_S, dynRate=FRAME_S, cameraRate=FRAME_S)
+    TheBSKSim.useBaselineDetector = USE_BASELINE_DETECTOR
     TheBSKSim.set_DynModel(BSK_OpNavDynamics)
     TheBSKSim.set_FswModel(BSK_OpNavFsw)
 

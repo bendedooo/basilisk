@@ -127,9 +127,11 @@ class BSKSim(SimulationBaseClass.SimBaseClass):
     """
     BSK Simulation base class for opNav scenarios
     """
-    def __init__(self, fswRate=0.1, dynRate=0.1):
+    def __init__(self, fswRate=0.1, dynRate=0.1, cameraRate=0.1):
         self.dynRate = dynRate
         self.fswRate = fswRate
+        # Seconds between camera images (1/fps). dynRate should divide it.
+        self.cameraRate = cameraRate
         # Create a sim module as an empty container
         SimulationBaseClass.SimBaseClass.__init__(self)
         self.SetProgressBar(True)

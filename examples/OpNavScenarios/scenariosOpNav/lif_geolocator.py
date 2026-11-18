@@ -11,7 +11,7 @@
 #      In simulation this is the reference answer; B - A is B's error.
 #
 #  Part 1 is the maths (plain numpy, testable without Basilisk).
-#  Part 2 is the Basilisk module that reads the messages every 0.1 s and calls Part 1.
+#  Part 2 is the Basilisk module that reads the messages every camera frame and calls Part 1.
 #
 #  Units: km inside the maths, m in Basilisk messages, pixels for image coordinates,
 #  degrees for latitude / longitude.

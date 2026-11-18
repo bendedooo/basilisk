@@ -86,8 +86,13 @@ class BSKDynamicModels:
         SimBase.dynProc.addTask(
             SimBase.CreateNewTask(self.taskName, self.processTasksTimeStep), 1000
         )
+        self.cameraRate = getattr(SimBase, "cameraRate", 0.1)
+        cameraPeriodNs = mc.sec2nano(self.cameraRate)
+        if cameraPeriodNs % self.processTasksTimeStep != 0:
+            print(f"WARNING: camera period {cameraPeriodNs} ns is not a multiple of the "
+                  f"dynamics step {self.processTasksTimeStep} ns; Vizard will skip frames.")
         SimBase.dynProc.addTask(
-            SimBase.CreateNewTask(self.taskCamera, mc.sec2nano(0.1)), 999
+            SimBase.CreateNewTask(self.taskCamera, cameraPeriodNs), 999
         )
 
         # Instantiate Dyn modules as objects
@@ -163,7 +168,7 @@ class BSKDynamicModels:
         self.cameraMod.blurParam = 3
 
         # Camera config
-        self.cameraRate = 0.1
+        # self.cameraRate is set in __init__ from SimBase.cameraRate
         self.cameraMod.renderRate = int(mc.sec2nano(self.cameraRate))  # in
         self.cameraMRP_CB = [0.0, 0.0, 0.0]  # Arbitrary camera orientation
         self.cameraMod.sigma_CB = self.cameraMRP_CB
@@ -207,6 +212,8 @@ class BSKDynamicModels:
         self.cameraMod2.blurParam = 3
 
         # Camera config
+        # Camera 2 is unused by FSW: render it about once per second
+        framesPerCam2Image = max(1, int(round(1.0 / self.cameraRate)))
         self.cameraMod2.renderRate = int(mc.sec2nano(self.cameraRate))  # in
         self.cameraMod2.sigma_CB = [0.0, 0.5, 0.0]
         self.cameraMod2.cameraPos_B = [0.0, 0.2, 2.2]  # in meters

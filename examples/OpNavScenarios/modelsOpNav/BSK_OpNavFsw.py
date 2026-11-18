@@ -96,6 +96,7 @@ class BSKFswModels():
         # Define process name and default time-step for all FSW tasks defined later on
         self.processName = SimBase.FSWProcessName
         self.processTasksTimeStep = macros.sec2nano(fswRate)
+        self.cameraRate = getattr(SimBase, "cameraRate", 0.1)  # needed before InitAllFSWObjects
 
         # Create module data and module wraps
         self.hillPoint = hillPoint.hillPoint()
@@ -172,7 +173,8 @@ class BSKFswModels():
 
         # Flash detectors run at the camera rate (0.1 s), independent of fswRate,
         # so that every camera image is processed (a 0.2 s flash spans 1-2 images)
-        self.flashTaskTimeStep = macros.sec2nano(0.1)
+        self.cameraRate = getattr(SimBase, "cameraRate", 0.1)
+        self.flashTaskTimeStep = macros.sec2nano(self.cameraRate)
         SimBase.fswProc.addTask(SimBase.CreateNewTask("flashDetectionTask", self.flashTaskTimeStep), 9)
 
         SimBase.AddModelToTask("opNavPointTask", self.imageProcessing, 15)
@@ -211,7 +213,8 @@ class BSKFswModels():
 
         SimBase.AddModelToTask("opNavAttODTask", self.imageProcessing, 15)
         # Flash detectors: own task at the camera rate (see flashDetectionTask)
-        SimBase.AddModelToTask("flashDetectionTask", self.flashDetectionAvg, 14)
+        if getattr(SimBase, "useBaselineDetector", False):   # old averaging detector
+            SimBase.AddModelToTask("flashDetectionTask", self.flashDetectionAvg, 14)
         SimBase.AddModelToTask("flashDetectionTask", self.impactFlashDetection, 13)
 
         SimBase.AddModelToTask("opNavAttODTask", self.pixelLine, 12)
@@ -582,7 +585,7 @@ class BSKFswModels():
             SimBase.DynModels.cameraMod.imageOutMsg
         )
 
-        self.flashDetectionAvg.numFramesToAverage = 5
+        self.flashDetectionAvg.numFramesToAverage = max(1, int(round(0.5 / self.cameraRate)))  # 0.5 s
         self.flashDetectionAvg.differenceThreshold = 25
         self.flashDetectionAvg.minimumArea = 2
         self.flashDetectionAvg.maximumArea = 5000
@@ -594,11 +597,14 @@ class BSKFswModels():
             SimBase.DynModels.cameraMod.imageOutMsg
         )
 
-        self.impactFlashDetection.backgroundAlpha = 0.35
+        # Tuned per frame at 10 fps; rescaled so they keep the same length in seconds
+        n = 0.1 / self.cameraRate
+        self.impactFlashDetection.backgroundAlpha = 1.0 - (1.0 - 0.35) ** (1.0 / n)
+        self.impactFlashDetection.noiseBeta = 1.0 - (1.0 - 0.05) ** (1.0 / n)
         self.impactFlashDetection.thresholdSigma = 5.0
         self.impactFlashDetection.highThresholdRatio = 1.0
         self.impactFlashDetection.lowThresholdRatio = 0.5
-        self.impactFlashDetection.warmupFrames = 30
+        self.impactFlashDetection.warmupFrames = int(round(30 * n))   # 3 s
 
         self.impactFlashDetection.minimumArea = 2
         self.impactFlashDetection.maximumArea = 5000
