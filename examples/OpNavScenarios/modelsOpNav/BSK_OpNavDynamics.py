@@ -174,7 +174,7 @@ class BSKDynamicModels:
         self.cameraMod.sigma_CB = self.cameraMRP_CB
         self.cameraMod.cameraPos_B = [0.0, 0.2, 2.2]  # in meters
 
-        self.cameraRez = [512, 512]  # [1024,1024] # in pixels
+        self.cameraRez = [1024, 1024]  # was [512, 512]; ~7 km/px at the Moon
         self.cameraSize = [
             10.0 * 1e-3,
             self.cameraRez[1] / self.cameraRez[0] * 10.0 * 1e-3,
@@ -217,7 +217,7 @@ class BSKDynamicModels:
         self.cameraMod2.renderRate = int(mc.sec2nano(self.cameraRate))  # in
         self.cameraMod2.sigma_CB = [0.0, 0.5, 0.0]
         self.cameraMod2.cameraPos_B = [0.0, 0.2, 2.2]  # in meters
-        self.cameraMod2.resolution = self.cameraRez
+        self.cameraMod2.resolution = [512, 512]  # not used by FSW; keep it cheap
         self.cameraMod2.fieldOfView = np.deg2rad(55)
         self.cameraMod2.parentName = self.scObject.ModelTag
         self.cameraMod2.skyBox = "black"

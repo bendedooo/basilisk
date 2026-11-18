@@ -611,6 +611,15 @@ class BSKFswModels():
         self.impactFlashDetection.blurSize = 1
         self.impactFlashDetection.noiseSF = 2.0
 
+        # Pixel-sized settings were tuned at 512 px: scale them with the camera resolution
+        pxScale = SimBase.DynModels.cameraRez[0] / 512.0
+        self.impactFlashDetection.varianceWindow = int(round(5 * pxScale))
+        self.impactFlashDetection.sigmaDilate = max(1, int(round(1 * pxScale)))
+        self.impactFlashDetection.limbMargin = int(round(4 * pxScale))
+        # Images have no camera noise, so every pixel's learned sigma sits at this floor;
+        # 1.0 makes the trigger 6 gray levels (kHigh = 6) instead of 3
+        self.impactFlashDetection.sigmaMin = 1.0
+
     def SetPixelLineConversion(self, SimBase):
         self.pixelLine.circlesInMsg.subscribeTo(self.opnavCirclesMsg)
         self.pixelLine.cameraConfigInMsg.subscribeTo(SimBase.DynModels.cameraMod.cameraConfigOutMsg)
